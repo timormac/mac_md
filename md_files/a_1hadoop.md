@@ -163,6 +163,20 @@ spark模式是集群，所以安装3份
 
 
 
+
+
+# yarn查看日志
+
+提交了个flink 3并行度的任务，代码中有打印操作，怎么找到各节点打印数据。
+
+打开project2:8088 => Applictions找到对应job点进去 => 找到第一列的AttemptID点进去 
+
+=> 看到4个任务(jobmanager,3taskmanager) => 最后一列Logs选一个进去 => 找到taskmanager.log 里面有打印数据
+
+
+
+
+
 # linux方面
 
 --help   对于不懂的脚本指令,百度的版本不同，一般直接在linux --help能看到指令，
@@ -180,8 +194,6 @@ tail -n 10  a.txt  查看文件最后几行
 tail -f a.txt 持续查看文件末尾，直到推出
 
 脚本执行的打印结果输出到指定文件： java  a.class  >>a.log
-
-
 
 
 
