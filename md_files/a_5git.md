@@ -307,16 +307,15 @@ dir1/  不跟踪dir1目录
 #git add  a.txt
 将工作区变更提交到缓冲区,这里会有个缓冲区版本
 
-#git restore  a.txt
+#git restore --staged  a.txt
 
-撤销暂存的文件：如果你使用了 git add 命令将文件添加到暂存区，但是后来决定不想提交这些文件，你可以使用 git restore 命令将暂存的文件还原到最近一次提交的状态。
+撤销暂存的文件：如果你使用了 git add 命令将文件添加到暂存区，但是后来决定不想提交这些文件，git restore --staged a.txt 
+会把已经变绿的修改为变红
 
-还原修改的文件：如果你在工作目录中对文件进行了修改，但是还没有提交到 Git 仓库，你可以使用 git restore 命令还原文件到最近一次提交的状态。
-
-
-丢弃工作区改动,a.txt返回到上一个commit版本。执行后,查看文件之前的操作没有了
-
-#git checkout 
+##git restore   a.txt
+还原修改的文件：如果你在工作目录中对文件进行了修改，但是还没有提交到缓冲区，可以直接不要文件的改动
+#git checkout a.txt
+和git restore   a.txt一个作用，不过还可以用来切换分支
 
 
 #git commit -m "123"  

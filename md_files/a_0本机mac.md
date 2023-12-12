@@ -1,6 +1,14 @@
 # 账号相关
 
 ```sql
+#windows
+账号 lpc
+密码 lpc
+
+#mac
+账号 timor 
+密码 lpc121995
+
 #mircsoft账号
 账户  a4433@riverdale.rac.sch.uk
 密码  Lpc19950419
@@ -28,7 +36,75 @@ lpc19950419
 #网易邮箱
 lpc19950419@163.com
 lpc121995
+
+#vpn
+2867102374@qq.com
+lpc19950419
 ```
+
+# mac连接windows虚拟机
+
+#### win开22端口/开ssh服务器
+
+```sql
+#查看win的ip地址
+为无限局域网适配器那个 ：192.168.0.108
+192.168.1.1是路由器地址
+192.168.1.106  是project1
+
+#查看SSH服务器是否开启
+win +R =》services.msc =>OpenSSH SSH Server否开启
+
+#开启端口操作
+控制面板=>系统和安全=》防火墙规则=》高级设置=》右键入站规则=》
+端口=》下一页=》22=》默认的=》默认的=》记录个名字timor开启22端口
+
+#开启ssh服务器
+win +R =》services.msc =>找到OpenSSH SSH Server查看是否开启，被禁用了无法开启=》
+=》设置=》应用=》可选功能=》查找OpenSSH服务器=》安装=》再执行上面操作，就可以开启了
+
+#关闭防火墙
+查看防火墙状态
+netsh advfirewall show allprofiles
+关闭windows上防火墙
+netsh advfirewall set allprofiles state off
+开启防火墙结束
+netsh advfirewall set allprofiles state on
+
+#每次开机开启ssh服务器
+net start sshd ，要用管理员运行终端，再执行指令
+或者上面第四条手动操作
+```
+
+
+
+#### mac连接虚拟机
+
+```sql
+因为wins没有ssh指令，所以没法执行，先ssh wins 再通过wins ssh虚拟机的操作
+
+#直接通过跳板机连接project1
+ssh -J lpc@192.168.0.108 lpc@192.168.1.106
+
+#先window连接
+ssh lpc@192.168.0.108
+exit 回车退出windows连接，control +c 没用
+#再通过winodows 连接 project1
+ssh lpc@project1
+wins从10开始有ssh指令，并且本地我们配置了DNS
+
+#ssh隧道,本地8888端口 通过wins转发给project1
+ssh -L 8888:192.168.1.106:3306 lpc@192.168.0.108
+比如我navigate连接的是本地的8888端口，实际连的是project1的3306
+
+#这个是一次写多个ssh隧道
+ssh -L 2181:B:2181 -L 9092:B:9092 -L 2182:C:2181 -L 9093:C:9092 -L 2183:D:2181 -L 9094:D:9092 user@T
+
+```
+
+
+
+
 
 
 

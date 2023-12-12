@@ -6,6 +6,15 @@
 
 # 问题待解决
 
+### hive 2.1版本后支持ACID
+
+从 Hive 0.14.0 开始，通过引入 ACID（原子性、一致性、隔离性、持久性）事务特性，Hive 支持了行级别的更新和删除。要在 Hive 中启用和使用 ACID 功能，需要满足以下条件：
+
+1. 使用的是支持事务的文件格式，如 ORC。
+2. 开启事务支持，设置 `hive.support.concurrency` 为 `true`。
+3. 使用适当的事务管理器，通常是 `org.apache.hadoop.hive.ql.lockmgr.DbTxnManager`。
+4. 为了实现事务，Hive 表必须是事务表。可以在创建表时使用 `TBLPROPERTIES ("transactional"="true")` 来指定。
+
 ### 如何确定reduce数目
 
   测试中有个表是2个block数据，执行select *插入另一个表，以及group之后插入另一个表，都是只生成1个reduce文件，
@@ -168,6 +177,39 @@ Hive查询的手动优化通常涉及对查询本身、数据模型和Hive配置
     使用`ANALYZE TABLE`命令来收集表的统计信息，这些信息可以帮助Hive优化器生成更优的执行计划。
 
 手动优化Hive查询是一个复杂的过程，需要根据具体的数据特点和查询需求来进行。以上提到的一些技巧可以作为高级优化的起点。在实际操作中，可能还需要结合具体的业务逻辑和数据特性进行细致的调整。
+
+
+
+# hive历史版本特性
+
+以下是一些 Apache Hive 的重要版本和其引入的主要特性的概述：
+
+1. Hive 0.13.0:
+   - 支持使用 ORC 文件格式作为默认存储格式，提供更高的查询性能和压缩比。
+   - 引入了 Vectorized Query Execution，通过批量处理数据来提高查询性能。
+   - 支持并行查询执行，提高查询性能和资源利用率。
+   - 引入了 Cost-Based Optimizer（CBO），通过统计信息来优化查询计划。
+
+2. Hive 0.14.0:
+   - 引入了 ACID（原子性、一致性、隔离性、持久性）事务特性，支持行级别的更新和删除操作。
+   - 支持使用 ORC 文件格式进行数据压缩和索引，提供更高的查询性能和过滤能力。
+   - 引入了 Tez 执行引擎，提供更高效的查询执行和资源管理。
+
+3. Hive 1.0.0:
+   - 引入了 LLAP（Live Long and Process）执行引擎，通过长时间运行的进程提供低延迟的交互式查询。
+   - 引入了 Hive-on-Spark，提供在 Apache Spark 上执行 Hive 查询的能力。
+   - 引入了 HiveServer2，一个独立的服务，提供更高的并发性和连接管理。
+
+4. Hive 2.0.0:
+   - 引入了 Hive-on-LLAP，将 LLAP 执行引擎作为 Hive 的默认执行引擎，提供更低的查询延迟和更高的并发性能。
+   - 支持 ACID 事务表的快照读取（Snapshot Isolation）。
+
+5. Hive 3.0.0:
+   - 引入了 Hive-on-Tez 2.0，提供更好的性能和稳定性。
+   - 引入了 Hive Warehouse Connector，提供更好的集成和交互性能。
+   - 支持 ACID 事务表的向后兼容性和更好的性能。
+
+这只是一些主要版本的特性摘要，每个版本都有更多的改进和增强功能。如果您需要详细了解每个版本的特性和改进，请参阅 Apache Hive 的官方文档和发布说明。
 
 # hive客户端
 
@@ -411,6 +453,50 @@ Parquet：
 
 数据仓库一次写入，多次读取，orc格式比较有优势。
 ```
+
+#### ACID事务表
+
+由于 HDFS 是一个写一次读多次的文件系统，Hive 最初并不支持行级别的更新和删除操作。然而，随着 Hive 的发展，一些新特性和工具被引入，以提供对表数据的更新和删除操作支持。
+
+在实现行级别的更新和删除操作时，Hive 会采用一种称为 "多版本并发控制" (MVCC) 的技术，以及 "基于写入的日志" (delta files) 来记录对表的更改。当执行更新或删除操作时，Hive 不会直接修改原始数据文件，而是将更改写入到 delta 文件中。在读取时，Hive 会合并原始数据和 delta 文件中的更改，以呈现最新的数据视图。
+
+从 Hive 0.14.0 开始，通过引入 ACID（原子性、一致性、隔离性、持久性）事务特性，Hive 支持了行级别的更新和删除。要在 Hive 中启用和使用 ACID 功能，需要满足以下条件：
+
+1. 使用的是支持事务的文件格式，如 ORC。
+2. 开启事务支持，设置 `hive.support.concurrency` 为 `true`。
+3. 使用适当的事务管理器，通常是 `org.apache.hadoop.hive.ql.lockmgr.DbTxnManager`。
+4. 为了实现事务，Hive 表必须是事务表。可以在创建表时使用 `TBLPROPERTIES ("transactional"="true")` 来指定。
+
+以下是一个简单的例子，说明如何在 Hive 中创建一个支持 ACID 操作的表：
+
+```sql
+CREATE TABLE students (
+    id INT,
+    name STRING,
+    age INT
+)
+CLUSTERED BY (id) INTO 4 BUCKETS
+STORED AS ORC
+TBLPROPERTIES ('transactional'='true');
+```
+
+一旦创建了事务表，就可以执行标准的 SQL 更新和删除操作了：
+
+```sql
+-- 更新操作
+UPDATE students SET age = 20 WHERE id = 1;
+
+-- 删除操作
+DELETE FROM students WHERE id = 1;
+```
+
+
+
+这种方法类似于您提到的 HBase 的标记删除机制，其中多个相同的 rowkey 数据只会取时间最新的一条记录。在 Hive 中，这通过合并原始数据文件和 delta 文件中的变更来实现，确保读取操作总是返回最新的数据状态。
+
+对于您提出的想法，加入一个新字段来标记是否做过修改，这通常不是必要的。因为 Hive 的 ACID 特性已经提供了这种行级别的更新和删除能力。如果您确实需要跟踪修改，可以在表中添加额外的字段来记录行的版本或最后修改时间，但这通常是为了特定的业务逻辑或数据审计目的，而不是为了实现基本的更新和删除功能。
+
+
 
 #### 建表优化
 
@@ -721,6 +807,18 @@ select name,age,money,sex from new_tb1
 // with里的语句当作临时表
 ```
 
+### union/union all
+
+```sql
+#union会去重,union all不会去重
+
+#union去重规则
+会对所有字段比对,具体的去重规则如下：
+对于非集合类型的字段，UNION会比较字段的值是否相等来判断行是否重复。
+对于数组,只有当两个数组的元素完全相同，并且元素的顺序也相同，才会被视为重复的行。
+对于包含Map、Struct等复杂集合类型的字段，UNION操作符在Hive中无法直接进行去重判断。在这种情况下，UNION会将所有行都保留，无论它们是否重复。
+```
+
 
 
 # 可执行写法
@@ -736,13 +834,13 @@ select * from tmp  where id in (select id from tmp_copy);
 	然后执行的是map join  //这样的话和join就没区别了
 ```
 
-### 分组后时用开窗口
+### 开窗用分组后的统计
 
 ```sql
  select userid, 
  spuid,
  count(*),
- #group by 后直接可以用开窗rank，不用再套一个子查询
+ //可以在groupby分组后，开窗里直接用聚合算子count(*)排序
  rank()over ( partition by  userid,spuid order by count(*) desc ) as rk 
  from  ods_mysql_orderinfo as info
  group by info.userid,info.spuid

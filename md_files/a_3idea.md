@@ -4,6 +4,10 @@
 
 # idea问题记录
 
+#### lombok一直编译失败
+
+java: 程序包lombok不存在
+
 #### 编译时找不到主类
 
 因为.class文件必须要和java文件在一个项目下，才能读取到。所以.class编译目录必须和项目目录相同
@@ -52,6 +56,8 @@ settings=>complier=>java complier版本和project structure不同
 
 for循环   fori +tab 或者 集合.for +tab
 
+快捷生成if    a1==a2 .if + tab
+
 else-if +tab自动生成(){}
 
 注释  command +/单行注释 	command+option+/ 多行注释
@@ -83,6 +89,76 @@ else-if +tab自动生成(){}
 查看某个方法/变量被哪些地方引用     option+F7    windows是alt+F7  或者右键flind useage
 
 
+
+# idea效率插件
+
+```sql
+#Rainbow Brackets
+将括号按照不同颜色进行高亮显示，提高代码可读性和配对括号的识别。
+#Key Promoter X
+在你使用鼠标执行某个操作时，显示相应的快捷键提示，帮助你学习和使用快捷键，会记录你的鼠标操作，
+"Lombok"：
+简化 Java 代码的编写，自动生成样板代码，减少冗余的 getter/setter 方法提示哪些可以用快捷键。还会有记录频次
+"SonarLint"：
+集成 SonarLint 静态代码分析工具，帮助你发现和修复代码质量问题。
+"Markdown Navigator"：
+idea默认已经下载了，提供对 Markdown 文件的支持，包括实时预览、语法高亮、表格编辑等功能。
+```
+
+
+
+#### SonarLint
+
+使用方法, 右键项目目录/java文件=> analyze =>选择sonarlint
+
+SonarLint 是一款集成在 IntelliJ IDEA 中的静态代码分析工具，它可以帮助你发现和修复代码质量问题。SonarLint 插件可以分析你的代码并提供实时反馈，帮助你遵循最佳的编码实践和规范。
+
+使用 SonarLint 插件的步骤如下：
+
+1. 下载和安装插件：在 IntelliJ IDEA 中，打开插件市场（Marketplace），搜索 "SonarLint" 并安装该插件。安装完成后，重启 IntelliJ IDEA。
+2. 连接到 SonarQube 或 SonarCloud（可选）：如果你的团队使用 SonarQube 或 SonarCloud 进行代码质量管理，你可以连接到这些服务器以获取更全面的分析结果。在 IntelliJ IDEA 的设置中，找到 SonarLint 部分，配置服务器的连接信息。
+3. 配置项目绑定（可选）：如果你的项目已经在 SonarQube 或 SonarCloud 上进行了配置，你可以将项目与服务器上的规则进行绑定，以确保 SonarLint 在分析代码时使用正确的规则集。在项目设置中，找到 SonarLint 部分，选择适当的绑定配置。
+4. 运行 SonarLint 分析：在 IntelliJ IDEA 中打开你的项目，并确保 SonarLint 插件已启用。当你编辑代码时，SonarLint 会自动分析你的代码，并在编辑器中显示问题和建议。你可以通过点击问题来查看详细信息，并根据建议进行代码改进。
+5. 查看 SonarLint 报告：你还可以查看整个项目的 SonarLint 报告，以获取关于代码质量和问题的总览。在 IntelliJ IDEA 的底部工具栏中，找到 SonarLint 图标，点击它可以打开 SonarLint 报告窗口。
+
+SonarLint 提供了丰富的静态代码分析功能，可以检测并提供修复建议的问题包括代码重复、潜在的 Bug、安全漏洞、代码规范违规等。通过使用 SonarLint 插件，你可以提高代码质量、减少潜在的问题，并遵循最佳的编码实践。
+
+#### Lombok
+
+Lombok 是一款用于简化 Java 代码编写的插件，它可以自动生成样板代码，减少冗余的 getter/setter 方法，以及其他一些常用的代码块。在 IntelliJ IDEA 中使用 Lombok 插件可以提高代码的可读性和简洁性。
+
+使用 Lombok 插件的步骤如下：
+
+1. 下载和安装插件：在 IntelliJ IDEA 中，打开插件市场（Marketplace），搜索 "Lombok" 并安装该插件。安装完成后，重启 IntelliJ IDEA。
+
+2. 在项目中添加 Lombok 依赖：在你的项目中，需要添加 Lombok 依赖。通常，你可以在项目的构建配置文件（如 Maven 的 pom.xml 或 Gradle 的 build.gradle）中添加以下依赖：
+
+   ```xml
+   <dependency>
+       <groupId>org.projectlombok</groupId>
+       <artifactId>lombok</artifactId>
+       <version>1.18.20</version>
+       <scope>provided</scope>
+   </dependency>
+   ```
+
+   这将在编译时将 Lombok 依赖添加到你的项目中。
+
+3. 启用 Lombok 插件：在 IntelliJ IDEA 中，打开项目设置（Preferences），找到 Lombok 部分，并确保 Lombok 插件已启用。
+
+4. 使用 Lombok 注解：在你的 Java 类中，可以使用 Lombok 提供的注解来自动生成代码。一些常用的 Lombok 注解和它们的作用如下：
+
+   - `@Data`：生成所有字段的 getter、setter 方法、`equals()`、`hashCode()` 和 `toString()` 方法。
+   - `@Getter` / `@Setter`：生成字段的 getter / setter 方法。
+   - `@NoArgsConstructor` / `@AllArgsConstructor`：生成无参构造函数 / 包含所有字段的构造函数。
+   - `@Builder`：生成建造者模式的构造方法。
+   - `@Slf4j`：生成日志记录器 `log`。
+
+   通过在类上添加这些注解，Lombok 插件会在编译时自动生成相应的代码。
+
+5. 清理和重新构建项目：在添加了 Lombok 注解后，你需要清理和重新构建你的项目，以使 Lombok 自动生成的代码生效。
+
+使用 Lombok 插件可以减少样板代码的编写，提高代码的简洁性和可读性。然而，需要注意的是，Lombok 自动生成的代码在编译后才会出现，因此在编辑器中可能看不到这些生成的方法。
 
 
 

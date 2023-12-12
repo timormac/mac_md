@@ -352,7 +352,7 @@ maven-archetype-webapp   比第一个干净一点
 
 #### 手动maven工程
 
- 1   mvn archetype:gernerate  创建一个mvn工程，arrchetype是插件名字，调用插件，gernerate是目标
+ 1   mvn archetype:generate  创建一个mvn工程，arrchetype是插件名字，调用插件，gernerate是目标
 
 执行后，后面有个选择默认是 7，快速的archetype
 

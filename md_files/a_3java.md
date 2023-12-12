@@ -22,6 +22,48 @@
 
 java执行的时候，指定加载lib库路径，然后把用到的相关jar包放到库中。java -Djava.ext.dirs=/opt/lib  -cp  a.jar Test  
 
+
+
+# java历史版本特性
+
+以下是一些 Java 的重要版本和其引入的主要特性的概述：
+
+1. Java 5 (J2SE 5.0):
+   - 引入了泛型（Generics），提供类型安全和更好的代码重用。
+   - 引入了自动装箱和拆箱（Autoboxing and Unboxing），简化了基本类型和对应包装类型之间的转换。
+   - 引入了增强的 for 循环（Enhanced for loop），简化了遍历数组和集合的操作。
+   - 引入了注解（Annotations），用于提供元数据和编译时检查。
+   - 引入了枚举（Enums），提供了定义和使用枚举类型的支持。
+2. Java 6 (Java SE 6):
+   - 引入了脚本语言支持（Scripting API），允许在 Java 程序中执行脚本语言。
+   - 引入了编译时注解处理器（Annotation Processing），用于在编译时生成额外的源代码。
+   - 引入了并发编程增强，如线程安全的集合类和并发工具类。
+3. Java 7 (Java SE 7):
+   - 引入了钻石操作符（Diamond Operator），简化了泛型的使用。
+   - 引入了字符串在 switch 语句中的支持。
+   - 引入了 try-with-resources 语句，简化了资源的管理和释放。
+   - 引入了新的文件系统 API（NIO.2），提供了更强大和灵活的文件操作功能。
+4. Java 8 (Java SE 8):
+   - 引入了函数式接口和 Lambda 表达式，支持函数式编程风格。
+   - 引入了流式操作（Stream API），提供了一种更便捷的集合数据处理方式。
+   - 引入了默认方法（Default Methods），允许在接口中定义具体的方法实现。
+   - 引入了新的日期和时间 API（java.time 包），提供了更好的日期和时间处理功能。
+5. Java 9 (Java SE 9):
+   - 引入了模块化系统（Java Platform Module System，JPMS），提供了更好的代码组织和可重用性。
+   - 引入了 JShell，一个交互式的 Java 编程工具。
+   - 引入了改进的 Stream API，提供了更多的操作和性能优化。
+6. Java 10 (Java SE 10):
+   - 引入了局部变量类型推断（Local Variable Type Inference），允许使用 var 关键字来声明局部变量。
+7. Java 11 (Java SE 11):
+   - 引入了长期支持（LTS）版本的概念。
+   - 移除了一些过时的 API，如 Applet、Java Web Start 等。
+8. Java 12-17:
+   - 引入了一些小的改进和增强，如新的字符串方法、Switch 表达式、垃圾回收器的改进、新的嵌套类型支持等。
+
+这只是一些主要版本的特性摘要，每个版本都有更多的改进和增强功能。如果您需要详细了解每个版本的特性和改进，请参阅 Java 官方文档和发布说明。
+
+
+
 # 功能代码
 
 ### 类名创建对象 
@@ -150,9 +192,9 @@ arr.stream().map( String::length );
 
 
 
+# java习惯养成
 
-
-# java常用类库
+### java常用类库
 
 目录：日期库   json库  Math库  String库
 
@@ -242,7 +284,7 @@ String库
 
 
 
-# 源码解读习惯
+### 源码解读习惯
 
 1 有一些代码,做一些判断之类的，但是并没有返回值什么的，比如说对于一个传入的集合不能为空,然后才能进行后续操作，
 
@@ -278,7 +320,7 @@ String库
 
  
 
-# 快速适应框架API
+### 快速适应框架API
 
 1  例如flink中通过DataStream创建窗口,ds.window()
 
@@ -296,7 +338,7 @@ keyBy.window(TumblingProcessingTimeWindows.of(Time.seconds(10)))
 
 
 
-# 修饰符/构造器
+# 类/修饰符
 
 ### 包的命名
 
@@ -320,6 +362,20 @@ keyBy.window(TumblingProcessingTimeWindows.of(Time.seconds(10)))
 
 所以为什么代码里总有一个无参构造器多此一举，或者子类手动显式写一个和父类一样的构造器，调super(a,b)。
 
+### getter和setter用途
+
+在 Java 中给属性设置 getter 和 setter 方法的设计有以下几个主要目的和意义：
+
+1. 封装数据访问：使用 getter 和 setter 方法可以将属性的访问限制在类的内部，通过方法来控制对属性的读取和修改。这样可以隐藏属性的具体实现细节，提供统一的访问接口，增加了代码的封装性和安全性。
+2. 访问控制和数据验证：通过 getter 和 setter 方法，可以在设置属性时进行访问控制和数据验证。你可以在 setter 方法中添加逻辑，例如检查属性值的合法性、范围限制、数据格式验证等。这样可以确保属性的有效性和一致性。
+3. 可以添加额外逻辑：通过 getter 和 setter 方法，你可以在访问属性时添加额外的逻辑。例如，在 getter 方法中可以实现延迟加载，只有在需要时才获取属性值；在 setter 方法中可以触发其他操作，例如通知其他对象属性的变化。
+4. 对象状态管理：通过 getter 和 setter 方法，可以更好地管理对象的状态。你可以在 setter 方法中记录属性的修改历史，或者在 getter 方法中返回属性的计算值。这样可以提供更灵活和可控的对象状态管理机制。
+5. 兼容框架和工具：许多 Java 框架和工具都依赖于 getter 和 setter 方法来访问和操作对象的属性。例如，ORM（对象关系映射）框架需要通过 getter 和 setter 方法来映射数据库表和对象的字段。如果没有这些方法，这些框架和工具将无法正常工作。
+
+总之，给属性设置 getter 和 setter 方法可以提供更好的封装性、访问控制和数据验证，同时也提供了扩展性和兼容性。这种设计模式使得代码更易于维护、重用和扩展，并且符合面向对象编程的封装原则。
+
+
+
 ### 修饰符private
 
 场景1，有些属性 设置为private属性，这样这些属性赋值的时候需要使用getter和setter方法，因为有的赋值可能满足类型范围，但是不满足需求范围，可以在getter和setter中做条件处理
@@ -330,7 +386,7 @@ private修饰的属性和方法只能在本类中使用，在子类用调用不�
 
 final修饰的类不能被继承，修饰的方法不能被重写。 被修饰的变量一旦被赋值不能改变
 
-# 编程语法
+# 基础语法
 
 ### 代码原则
 
@@ -381,6 +437,8 @@ public class ClassMethodGenericType<T> {
 
 
 
+
+
 ### 接口interface
 
 个人理解，在一些初始代码中，代码执行的范型 就是接口，然后后续不管后面新建了什么class，都会转为接口然后调用对应方法。
@@ -390,6 +448,8 @@ public class ClassMethodGenericType<T> {
 对有多实现的接口，这样互相不影响，各自用自己的方法。
 
 3.为什么看不懂代码，因为看到的代码都是调用接口的方法，而没有找到对应的实现类，找不到真正的执行原码。
+
+
 
 ### 接口(新特性)
 
@@ -410,6 +470,45 @@ public class ClassMethodGenericType<T> {
 例如在flink中的WatermarkStrategy接口，继承了extends TimestampAssignerSupplier, WatermarkGeneratorSupplier
 
 并且很多静态方法中的，返回值就是WatermarkStrategy的实现对象 
+
+
+
+### 函数式接口
+
+在 Java 中，函数式接口（Functional Interface）是指只包含一个抽象方法的接口。函数式接口是支持函数式编程的基础，它可以用作 Lambda 表达式的目标类型。
+
+函数式接口具有以下特点：
+
+- 只包含一个抽象方法。
+- 可以包含默认方法和静态方法。
+- 可以使用 `@FunctionalInterface` 注解进行标记（可选）。
+
+函数式接口的存在使得开发者可以使用 Lambda 表达式来创建简洁、灵活的代码，尤其在处理函数式编程的场景下非常有用。
+
+以下是一个函数式接口的示例：
+
+```java
+@FunctionalInterface
+interface Calculator {
+    int calculate(int a, int b);
+}
+```
+
+在上述示例中，`Calculator` 是一个函数式接口，它定义了一个抽象方法 `calculate`，该方法接受两个整数参数并返回一个整数结果。
+
+可以使用 Lambda 表达式来实现该函数式接口，例如：
+
+```java
+Calculator addition = (a, b) -> a + b;
+int result = addition.calculate(2, 3);
+System.out.println(result);  // 输出：5
+```
+
+在上述代码中，使用 Lambda 表达式实现了 `Calculator` 接口，并将其赋值给 `addition` 变量。Lambda 表达式 `(a, b) -> a + b` 定义了计算两个整数相加的逻辑。通过调用 `calculate` 方法，可以使用 Lambda 表达式进行计算并得到结果。
+
+函数式接口的使用可以使代码更加简洁、易读，并且能够更好地支持函数式编程的思想。
+
+
 
 ### 抽象类abstract
 
@@ -560,183 +659,7 @@ class SingletonTest {
 
 抓到异常后，用log把异常写入错误日志，不影响后续任务
 
-### 注解/自定义@value
 
-idea中注解被哪些方法调用了,要点击useage查看，control+H看不到
-
-注解案例
-
-```java
-//注解分为几种功能,编译时，运行时。想spring中的@value就是运行时，读取配置文件赋值给变量
-//注意@Value注解只能赋给类属性,不能在方法里使用
-class A {
-  //只能是属性，不用用在方法中给变量
-   @Value("url")
-   String path ;
-}
-```
-
-
-
-注解用途
-
-```sql
-#@override注解
-如果子类方法没有覆盖超类的方法，那么编译的时候能检验出来。
-
-#@Deprecated
-用于表示被标记的数据已经过时，不建议使用。
-可以用于修饰 属性、方法、构造、类、包、局部变量、参数。
-它会被编译器程序读取。
-
-在 Java 里注解有许多用途，可以归纳为三类：
-#编译检查：
-通过代码里标识的元数据让编译器能实现基本的编译检查，编译器可以使用注解来检测错误或抑制警告。
-#编译时和部署时的处理：
-程序可以处理注解信息以生成代码，XML 文件等。
-#运行时处理：
-可以在运行时检查某些注解并处理。
-
-程序员多多少少都曾经历过被各种配置文件（xml、properties）支配的恐惧。过多的配置文件会使得项目难以维护。使用注解可以减少配置文件或代码，是注解最大的用处，现在 Spring 家族的 SpringBoot 就是靠注解维护各种 Bean 组件的，让开发中者不再用XML指定各种Java Bean 的路径、名称等属性，减少了不少项目配置的步骤，从而让Java项目的开发提速了不少
-```
-
-
-
-自定义@Value,代码注释在项目里
-
-```java
-如果您希望完全自己编写一个类似于Spring Boot中的@Value注解的功能，而不依赖于Spring框架或其他第三方库，可以按照以下步骤进行操作：
-创建一个自定义注解，比如@CustomValue：
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
-
-@Target({ElementType.FIELD, ElementType.METHOD, ElementType.PARAMETER})
-@Retention(RetentionPolicy.RUNTIME)
-public @interface CustomValue {
-    String value();
-}
-
----------------------------------------------------------------------------
-  
-  创建一个配置类，用于加载配置文件并提供获取属性值的方法：
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.util.Properties;
-
-public class CustomProperties {
-    private Properties properties;
-
-    public CustomProperties(String filePath) {
-        properties = new Properties();
-        try {
-            FileInputStream fis = new FileInputStream(filePath);
-            properties.load(fis);
-            fis.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-    public String getProperty(String key) {
-        return properties.getProperty(key);
-    }
-}
----------------------------------------------------------------------------
-在上述代码中，我们使用Properties类加载配置文件，并提供了一个getProperty方法用于获取属性值。
-创建一个注解处理器，用于解析注解并读取配置文件中的值：
-import java.lang.reflect.Field;
-
-public class CustomValueProcessor {
-    private CustomProperties customProperties;
-
-    public CustomValueProcessor(String filePath) {
-        customProperties = new CustomProperties(filePath);
-    }
-
-    public void process(Object obj) {
-        Class<?> clazz = obj.getClass();
-        for (Field field : clazz.getDeclaredFields()) {
-            CustomValue customValueAnnotation = field.getAnnotation(CustomValue.class);
-            if (customValueAnnotation != null) {
-                String propertyName = customValueAnnotation.value();
-                String propertyValue = customProperties.getProperty(propertyName);
-                if (propertyValue != null) {
-                    field.setAccessible(true);
-                    try {
-                        field.set(obj, propertyValue);
-                    } catch (IllegalAccessException e) {
-                        e.printStackTrace();
-
----------------------------------------------------------------------------
-在上述代码中，我们使用反射来获取字段，并通过自定义的CustomProperties类获取配置文件中的属性值，然后将其设置到相应的字段中。
-在您的应用程序中使用自定义注解：
-public class MyApp {
-    @CustomValue("custom.property.key")
-    private String customPropertyValue;
-
-    public void init() {
-        CustomValueProcessor processor = new CustomValueProcessor("custom.properties");
-        processor.process(this);
-
-        System.out.println(customPropertyValue);
-    }
-
-    // ...
-}
-在上述代码中，我们创建了一个MyApp类，并在字段上使用了自定义的@CustomValue注解。然后在init方法中，我们创建了一个CustomValueProcessor对象，并调用process方法来处理注解并读取配置文件中的属性值。
-需要注意的
-```
-
-### 多线程
-
-执行java程序会有多个线程，main是其中1个，注意多核之间可以共享内存，多线程可以被多核执行
-
-```sql
-#Attach Listener
-Attach Listener 线程的主要工作是串流程，流程步骤包括：接收客户端命令、解析命令、查找命令执行器、执行命令等。
-#Signal Dispatcher
-Signal Dispatcher线程负责将Attach Listener 线程接收的命令分发到各个不同的模块处理，并且返回处理结果。
-#Finalizer
-Finalizer线程主要处理JVM垃圾回收。
-#Reference Handler
-ReferenceHandler线程的主要功能是处理pending链表中的引用对象，也是协助JVM进行gc操作。
-#main
-主线程，也就是负责执行main方法中的代码
-可以看出，除了main线程之外，其他线程都是jvm创建的守护线程，保证了java程序的正确运行。
-```
-
-##### 多线程效率原因
-
-```sql
-1 单核变多核
-2 利用了io或者网络通讯的等待时间做别的
-```
-
-##### 使用场景
-
-```sql
-#计算密集型：(原本只有main线程，现在变成多个核同时执行)
-当任务需要大量的计算和处理，而不涉及太多的IO操作时，多线程可以充分利用多核处理器的计算能力，将任务分解为多个子任务并并行执行，从而加快整体执行速度。图像处理、视频编码、科学计算等都可以通过多线程实现并行计算
-#IO密集型任务
-当任务涉及大量的IO操作（如文件读写、网络通信等）时，使用多线程可以充分利用CPU的空闲时间，提高任务的执行效率。例如，网络爬虫、文件下载、数据导入导出等任务可以通过多线程实现高效的IO操作。
-#服务器应用程序
-在服务器应用程序中，多线程可以处理多个并发请求，提高系统的吞吐量和响应速度。每个请求可以由一个独立的线程处理，避免阻塞主线程。例如，Web服务器、数据库服务器等都可以使用多线程来处理客户端请求。
-#异步编程：
-多线程可以用于实现异步编程模型，提高系统的并发性和响应性。通过使用多线程，可以在等待某个操作完成的同时，继续执行其他任务，从而提高系统的效率。例如，在Java中，可以使用CompletableFuture、ExecutorService等来实现异步编程。
-#需要注意的是
-在使用多线程时，需要注意线程安全性、资源竞争、线程间的通信等问题。合理地设计和管理多线程，使用合适的同步机制和线程池
-```
-
-##### 案例
-
-```sql
-#多线程使用具体看瓶颈在哪
-如果是网络借口调用上响应时间慢，那么可以开多线程。
-比如读取一个文件10w条数据，每50条数据调一次网络接口发送过去,每次接口响应时间是100ms，这里明显是文件读取速度远大于，网络接口调用的。可以开多线程来弄，不过要确保:多线程读取的文件系统数据不会丢或者重复的问题。
-
-原型是读取文件，文件要加载到内存用一个数组存起来。问题本质就是多线程对集合读取问题。
-```
 
 
 
@@ -958,7 +881,251 @@ public class TypeParserFactory {
 
 　　在软件开发中，比如我们的产品有这样一个功能，用户下单支付成功之后，就会发送一条短信通知用户，如果之后希望不仅发送短信，还需要发送邮件，还需要语音通知，在这样的情况下，我们就可以采用观察者模式，我们将支付成功信息放入到消息队列中，至于发短信还是发邮件，由各个业务模块订阅消息队列自己处理。这样在订单模块里面，就不需要一个个通知短信模块，邮件模块了。
 
+# java高级
+
+### int与Integer
 
 
 
+```sql
+#案例
+java中int 和Inteter声明的变量有什么区别？为什么int a = 12345678; int b =12345678; a==b返回的是true ,
+而Integer c ,Integer d ,当c与d相同且小于100时为true，c与d相同且大于1000时，返回false
+
+"原因如下:"
+#基本数据类型int
+对于基本数据类型int，在Java中并不会创建对象，也不存在计算机底层存储变量值的地址。基本数据类型是直接存储在内存中的，它们的值直接存储在变量所分配的内存空间中。
+当你声明一个int类型的变量，例如int a = 123456;，Java会在内存中为变量a分配足够的空间来存储整数值123456。这个空间的大小是固定的，通常是4个字节（32位），用于存储整数值的二进制表示,基本数据类型的==比较的是值
+
+#引用数据类型Integer
+而对于Integer对象，使用==运算符比较的是对象的引用（内存地址），而不是对象的值。当两个Integer对象通过自动装箱或new关键字创建时，它们可能会引用不同的内存地址，即使它们的值相同。在Java中，对于小于等于127和大于等于-128的整数，会使用对象池（object pool）来缓存Integer对象，以提高性能。因此，当比较小于等于127的整数时，Integer c和Integer d可能引用相同的对象，所以c == d返回true。但是，对于大于127的整数，不会使用对象池，每次创建都会生成新的对象，所以c == d返回false。
+
+#结论
+基本数据类型的==比较的是值,  而对象比较的是地址
+```
+
+
+
+
+
+### 注解/自定义@value
+
+idea中注解被哪些方法调用了,要点击useage查看，control+H看不到
+
+注解案例
+
+```java
+//注解分为几种功能,编译时，运行时。想spring中的@value就是运行时，读取配置文件赋值给变量
+//注意@Value注解只能赋给类属性,不能在方法里使用
+class A {
+  //只能是属性，不用用在方法中给变量
+   @Value("url")
+   String path ;
+}
+```
+
+
+
+注解用途
+
+```sql
+#@override注解
+如果子类方法没有覆盖超类的方法，那么编译的时候能检验出来。
+
+#@Deprecated
+用于表示被标记的数据已经过时，不建议使用。
+可以用于修饰 属性、方法、构造、类、包、局部变量、参数。
+它会被编译器程序读取。
+
+在 Java 里注解有许多用途，可以归纳为三类：
+#编译检查：
+通过代码里标识的元数据让编译器能实现基本的编译检查，编译器可以使用注解来检测错误或抑制警告。
+#编译时和部署时的处理：
+程序可以处理注解信息以生成代码，XML 文件等。
+#运行时处理：
+可以在运行时检查某些注解并处理。
+
+程序员多多少少都曾经历过被各种配置文件（xml、properties）支配的恐惧。过多的配置文件会使得项目难以维护。使用注解可以减少配置文件或代码，是注解最大的用处，现在 Spring 家族的 SpringBoot 就是靠注解维护各种 Bean 组件的，让开发中者不再用XML指定各种Java Bean 的路径、名称等属性，减少了不少项目配置的步骤，从而让Java项目的开发提速了不少
+```
+
+
+
+自定义@Value,代码注释在项目里
+
+
+
+### 多线程
+
+执行java程序会有多个线程，main是其中1个，注意多核之间可以共享内存，多线程可以被多核执行
+
+```sql
+#Attach Listener
+Attach Listener 线程的主要工作是串流程，流程步骤包括：接收客户端命令、解析命令、查找命令执行器、执行命令等。
+#Signal Dispatcher
+Signal Dispatcher线程负责将Attach Listener 线程接收的命令分发到各个不同的模块处理，并且返回处理结果。
+#Finalizer
+Finalizer线程主要处理JVM垃圾回收。
+#Reference Handler
+ReferenceHandler线程的主要功能是处理pending链表中的引用对象，也是协助JVM进行gc操作。
+#main
+主线程，也就是负责执行main方法中的代码
+可以看出，除了main线程之外，其他线程都是jvm创建的守护线程，保证了java程序的正确运行。
+```
+
+##### 多线程效率原因
+
+```sql
+1 单核变多核
+2 利用了io或者网络通讯的等待时间做别的
+```
+
+```java
+如果您希望完全自己编写一个类似于Spring Boot中的@Value注解的功能，而不依赖于Spring框架或其他第三方库，可以按照以下步骤进行操作：
+创建一个自定义注解，比如@CustomValue：
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+
+@Target({ElementType.FIELD, ElementType.METHOD, ElementType.PARAMETER})
+@Retention(RetentionPolicy.RUNTIME)
+public @interface CustomValue {
+    String value();
+}
+
+---------------------------------------------------------------------------
+  
+  创建一个配置类，用于加载配置文件并提供获取属性值的方法：
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.util.Properties;
+
+public class CustomProperties {
+    private Properties properties;
+
+    public CustomProperties(String filePath) {
+        properties = new Properties();
+        try {
+            FileInputStream fis = new FileInputStream(filePath);
+            properties.load(fis);
+            fis.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+    public String getProperty(String key) {
+        return properties.getProperty(key);
+    }
+}
+---------------------------------------------------------------------------
+在上述代码中，我们使用Properties类加载配置文件，并提供了一个getProperty方法用于获取属性值。
+创建一个注解处理器，用于解析注解并读取配置文件中的值：
+import java.lang.reflect.Field;
+
+public class CustomValueProcessor {
+    private CustomProperties customProperties;
+
+    public CustomValueProcessor(String filePath) {
+        customProperties = new CustomProperties(filePath);
+    }
+
+    public void process(Object obj) {
+        Class<?> clazz = obj.getClass();
+        for (Field field : clazz.getDeclaredFields()) {
+            CustomValue customValueAnnotation = field.getAnnotation(CustomValue.class);
+            if (customValueAnnotation != null) {
+                String propertyName = customValueAnnotation.value();
+                String propertyValue = customProperties.getProperty(propertyName);
+                if (propertyValue != null) {
+                    field.setAccessible(true);
+                    try {
+                        field.set(obj, propertyValue);
+                    } catch (IllegalAccessException e) {
+                        e.printStackTrace();
+
+---------------------------------------------------------------------------
+在上述代码中，我们使用反射来获取字段，并通过自定义的CustomProperties类获取配置文件中的属性值，然后将其设置到相应的字段中。
+在您的应用程序中使用自定义注解：
+public class MyApp {
+    @CustomValue("custom.property.key")
+    private String customPropertyValue;
+
+    public void init() {
+        CustomValueProcessor processor = new CustomValueProcessor("custom.properties");
+        processor.process(this);
+
+        System.out.println(customPropertyValue);
+    }
+
+    // ...
+}
+在上述代码中，我们创建了一个MyApp类，并在字段上使用了自定义的@CustomValue注解。然后在init方法中，我们创建了一个CustomValueProcessor对象，并调用process方法来处理注解并读取配置文件中的属性值。
+需要注意的
+```
+
+
+
+##### 使用场景
+
+```sql
+#计算密集型：(原本只有main线程，现在变成多个核同时执行)
+当任务需要大量的计算和处理，而不涉及太多的IO操作时，多线程可以充分利用多核处理器的计算能力，将任务分解为多个子任务并并行执行，从而加快整体执行速度。图像处理、视频编码、科学计算等都可以通过多线程实现并行计算
+#IO密集型任务
+当任务涉及大量的IO操作（如文件读写、网络通信等）时，使用多线程可以充分利用CPU的空闲时间，提高任务的执行效率。例如，网络爬虫、文件下载、数据导入导出等任务可以通过多线程实现高效的IO操作。
+#服务器应用程序
+在服务器应用程序中，多线程可以处理多个并发请求，提高系统的吞吐量和响应速度。每个请求可以由一个独立的线程处理，避免阻塞主线程。例如，Web服务器、数据库服务器等都可以使用多线程来处理客户端请求。
+#异步编程：
+多线程可以用于实现异步编程模型，提高系统的并发性和响应性。通过使用多线程，可以在等待某个操作完成的同时，继续执行其他任务，从而提高系统的效率。例如，在Java中，可以使用CompletableFuture、ExecutorService等来实现异步编程。
+#需要注意的是
+在使用多线程时，需要注意线程安全性、资源竞争、线程间的通信等问题。合理地设计和管理多线程，使用合适的同步机制和线程池
+```
+
+##### 案例
+
+```sql
+#多线程使用具体看瓶颈在哪
+如果是网络借口调用上响应时间慢，那么可以开多线程。
+比如读取一个文件10w条数据，每50条数据调一次网络接口发送过去,每次接口响应时间是100ms，这里明显是文件读取速度远大于，网络接口调用的。可以开多线程来弄，不过要确保:多线程读取的文件系统数据不会丢或者重复的问题。
+
+原型是读取文件，文件要加载到内存用一个数组存起来。问题本质就是多线程对集合读取问题。
+```
+
+### 定位oom
+
+连接: https://www.bilibili.com/video/BV1Wu4y1c7N5/?spm_id_from=333.1007.tianma.1-1-1.click&vd_source=dc2f0659a9d317ea4b839219ee320ab7
+
+```sql
+"oom出现原因"
+
+#1.申请对象太多
+比如去mysql申请了全部数据，放入list中。
+
+#2.忘记释放的对象
+connecttion忘记close，每次查询都去创建了个connection。最好用连接池技术，这样不会出现这个问题，满了就会堵塞
+
+#3.本身分配的堆内存不合理
+内存分少了,jmap -heap查看堆内存分配情况
+
+#4.堆外内存oom怎么处理呢？？？？？？
+
+"定位OOM代码位置" 
+
+#挂了的定位
+提前设置 -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath = 
+含义，当出现堆溢出时，将溢出报错放到指定目录.但是这个很占磁盘空间，记录每一个对象创建，生成的文件很大
+
+#没挂了的定位
+
+# ？？问：分布式系统这种怎没定位呢
+```
+
+
+
+
+
+
+
+
+
+# 
 
