@@ -752,9 +752,27 @@ Flink提供了8个不同的处理函数：
 
 # Table API
 
+
+
+
+
 ### SQL
 
 Flink1.12版本基本做到了完善，即使在1.17当前版本中TableAPI 和SQL依旧不算稳定
+
+### 官网文档
+
+在applicationg develop(应用开发)里面
+
+### savepoint
+
+flink客户端，关闭任务时，执行save point,要事先设置save point制定路径，不然会报错。
+
+如果临时执行reset save point ,后面要重置为空，不然后面所有的作业，都以这个save point路径保存
+
+### catalog
+
+flink能对接hive表,不过flink不是个流吗？难道能监控hive表中数据变化吗？
 
 
 

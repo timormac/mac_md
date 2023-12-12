@@ -152,6 +152,21 @@ maven项目打包时在pom中添加
 
 
 
+### 修改源码并打包
+
+
+
+```sql
+#下载-source源码包
+flink-1.17-source.jar 带source的，里面都是java原文件，而不是.class字节码文件
+```
+
+
+
+
+
+
+
 # java效率开发
 
 ### stream流
