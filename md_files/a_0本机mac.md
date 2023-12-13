@@ -40,6 +40,14 @@ lpc121995
 #vpn
 2867102374@qq.com
 lpc19950419
+
+#一年阿里云服务器
+root
+Lpc19950419
+
+#paypal账号
+lpc19950419@163.com
+lpc19950419
 ```
 
 # mac连接windows虚拟机

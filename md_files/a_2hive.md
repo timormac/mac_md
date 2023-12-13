@@ -211,6 +211,45 @@ Hive查询的手动优化通常涉及对查询本身、数据模型和Hive配置
 
 这只是一些主要版本的特性摘要，每个版本都有更多的改进和增强功能。如果您需要详细了解每个版本的特性和改进，请参阅 Apache Hive 的官方文档和发布说明。
 
+
+
+# hive对比即席查询框架
+
+
+
+Impala和Druid都是为了提供快速的即席查询（ad-hoc query）而设计的分布式存储和查询系统。它们之所以适合即席查询，主要是因为它们的架构和查询执行方式与传统的MapReduce模式有所不同。
+
+Impala
+
+Impala是一个开源的大数据查询工具，由Cloudera开发，它直接在Hadoop的存储文件（如HDFS和HBase）上运行SQL查询。Impala是为了克服Hive在即席查询上的性能瓶颈而设计的。它使用了类似于传统关系数据库的MPP（Massive Parallel Processing）架构，可以并行地在多个节点上执行查询，从而大大加快了查询速度。
+
+Impala不使用MapReduce执行模型，而是使用自己的分布式查询引擎，这允许它在不需要启动MapReduce作业的情况下直接处理数据，从而减少了延迟。
+
+Druid
+
+Druid是一个为了实时分析而构建的高性能的分析型数据库。它专门用于事件驱动的数据或时间序列数据的快速聚合查询。Druid的设计重点在于提供快速的查询性能和实时数据摄入，使之非常适合于大规模的即席分析查询。
+
+Druid通过将数据分布存储在一个由多个节点组成的集群中，并且能够在这些节点上并行处理查询，来实现高速查询。Druid还采用了列式存储格式，这样可以高效地进行数据压缩和快速的聚合操作。
+
+Hive on Spark
+
+Hive是一个建立在Hadoop上的数据仓库工具，它最初是使用MapReduce作为其后端执行引擎。随着Spark的出现，Hive可以使用Spark作为计算引擎，而Spark是一个更快的内存计算框架，它比MapReduce有更好的性能，特别是在处理机器学习和迭代算法时。
+
+尽管Hive on Spark的性能有所提升，但是它通常仍然不如专门为即席查询优化的系统如Impala或Druid那样快。Hive的设计更注重于批量处理和兼容性，而不是即席查询的低延迟。
+
+为什么还使用Hive？
+
+尽管Impala和Druid在查询性能上有优势，但Hive仍然被广泛使用，原因包括：
+
+1. **成熟度和稳定性**：Hive是一个非常成熟的项目，拥有大量的用户和社区支持。企业通常倾向于使用成熟的技术。
+2. **兼容性**：Hive提供了与SQL标准的良好兼容性，这使得它能够更容易地集成到现有的数据仓库解决方案中。
+3. **生态系统**：Hive是Hadoop生态系统的一部分，与其他工具（如Pig、Oozie等）集成良好。
+4. **多引擎支持**：Hive可以使用不同的执行引擎（如MapReduce、Tez、Spark），为不同的用例提供灵活性。
+
+总结来说，选择Impala、Druid还是Hive on Spark，取决于具体的使用场景、数据特性、性能需求以及与现有系统的兼容性。在某些情况下，组织可能会同时使用这些工具，以便在不同的场景下优化性能和资源利用。
+
+
+
 # hive客户端
 
 ### 执行hql方式
@@ -588,6 +627,45 @@ Hive.map.aggr.hash.min.reduction=0.3
 set hive.exec.parallel=true; 
 #一个sql允许最大并行度，默认为8。
 set hive.exec.parallel.thread.number=16; 
+```
+
+### hive对接spark参数设置
+
+```sql
+对于设置Spark任务的并行度，你可以使用以下参数：
+
+spark.sql.shuffle.partitions: 这个参数可以设置Spark任务的reduce并行度，即shuffle操作的并行度。你可以将它设置为你想要的并行度值，比如设置为10。
+
+spark.default.parallelism: 这个参数可以设置Spark任务的map并行度，默认情况下，它的值为集群的总核数。你可以将它设置为你想要的并行度值，比如设置为10。
+
+spark.executor.memory: 设置每个Spark执行器的内存大小。可以通过指定值来控制Spark执行器可用的内存量，例如2g表示2GB。
+
+spark.executor.cores: 设置每个Spark执行器可用的CPU核心数。可以通过指定值来控制Spark执行器可使用的CPU核心数量，例如4表示4个核心。
+
+spark.executor.instances: 设置Spark执行器的实例数量。可以通过指定值来控制启动的Spark执行器实例数量，例如10表示启动10个执行器实例。
+
+spark.sql.shuffle.partitions: 设置Spark任务的reduce并行度，即shuffle操作的并行度。通过指定值来控制reduce任务的数量，例如200表示使用200个reduce任务。
+
+spark.default.parallelism: 设置Spark任务的map并行度，默认情况下，它的值为集群的总核数。通过指定值来控制map任务的数量，例如100表示使用100个map任务。
+
+spark.sql.autoBroadcastJoinThreshold: 设置自动广播连接的阈值。当一个表的大小小于或等于该阈值时，Spark会自动将其广播到其他节点上，以减少数据传输开销。可以通过指定值来控制广播连接的阈值，例如10m表示10MB。
+
+spark.sql.files.maxPartitionBytes: 设置每个文件分区的最大字节数。可以通过指定值来控制每个文件分区的大小，例如128m表示每个文件分区最大为128MB。
+
+spark.driver.memory: 设置Spark驱动程序的内存大小。可以通过指定值来控制Spark驱动程序可用的内存量，例如2g表示2GB。
+
+spark.driver.cores: 设置Spark驱动程序可用的CPU核心数。可以通过指定值来控制Spark驱动程序可使用的CPU核心数量，例如2表示2个核心。
+
+spark.sql.broadcastTimeout: 设置广播超时时间。当Spark广播一个大的数据集时，可以通过指定值来控制广播的超时时间，例如300s表示300秒。
+
+spark.sql.shuffle.partitioner: 设置shuffle操作的分区器。可以通过指定值来选择不同的分区器，例如hash表示使用哈希分区器，range表示使用范围分区器。
+
+spark.sql.adaptive.enabled: 启用自适应执行。通过设置为true来启用Spark的自适应执行特性，该特性可以根据运行时的数据和资源情况自动调整执行计划。
+
+spark.sql.optimizer.maxIterations: 设置优化器的最大迭代次数。可以通过指定值来控制优化器的最大迭代次数，例如100表示最大迭代100次。
+
+spark.sql.statistics.histogram.enabled: 启用直方图统计信息。通过设置为true来启用Spark的直方图统计信息，该特性可以提供更准确的查询优化。
+
 ```
 
 

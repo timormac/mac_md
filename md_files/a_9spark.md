@@ -166,6 +166,10 @@ Spark框架相对于MapReduce框架在以下几个场景下可能更加高效：
 
 
 
+# spark语句优化器
+
+预聚合，自动识别shuffle分区器等
+
 # scala源码解读
 
 #### scala额外知识
@@ -194,7 +198,6 @@ def f1( func:Myfunc[T] ) ={}
     val cleanF = sc.clean(f)
     new MapPartitionsRDD[U, T](this, (_, _, iter) => iter.flatMap(cleanF))
   }
-
 //TraversableOnce的源码 是Scala这个类中声明的
 type TraversableOnce[+A] = scala.collection.TraversableOnce[A]
 
