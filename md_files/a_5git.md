@@ -46,6 +46,8 @@ github代码突然不能push 也不能clone了，因为改成了http
 
 #### 代码pull失败代码冲突
 
+最好用idea去pull，能直接看到哪几个文件冲突，可以选择合并/选择他/选择你的
+
 警告:your local changes will be overwritten by merge. commit, statsh,or revert them to proceed
 
 ```sql

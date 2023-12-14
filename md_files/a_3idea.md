@@ -40,6 +40,10 @@ settings=>complier=>java complier版本和project structure不同
 
 因为source包是java文件，导入的必须是.class字节码文件才能识别
 
+#### 无法运行:Commline is too long
+
+edit configuration => 在 include provided下面2行=》shorten command line 选 classpath file就行 
+
 
 
 

@@ -169,6 +169,26 @@ flink-1.17-source.jar 带source的，里面都是java原文件，而不是.class
 
 # java效率开发
 
+### guava工具包
+
+```
+Guava（Google Guava）是一个由 Google 提供的开源Java库，它提供了许多实用的工具和函数，用于简化Java编程。Guava库包含了很多模块，每个模块都提供了不同的功能。
+其中一个最常用的模块是 guava 模块，它包含了 Guava 库的核心功能。一些常见的功能包括：
+集合工具：Guava 提供了丰富的集合工具类，用于操作和处理集合数据结构，例如列表、集合、映射等。这些工具类提供了更便捷和强大的操作方法，使集合的处理更加简单和高效。
+字符串处理：Guava 提供了一些字符串处理的工具类，例如拆分、连接、替换、格式化等操作。这些工具类可以简化字符串处理的代码，并提供了更多的功能和选项。
+缓存：Guava 提供了一个强大的缓存框架，用于在应用程序中管理和使用缓存。它支持不同的缓存策略和过期机制，并提供了高性能和可配置的缓存实现。
+函数式编程：Guava 提供了一些函数式编程的支持，例如函数接口、函数组合、断言和预条件等。这些功能可以帮助简化函数式编程的代码，并提供了更多的函数式编程工具。
+除了 guava 模块，Guava 还包含其他模块，如 guava-collections、guava-concurrency、guava-strings 等，每个模块都提供了特定的功能和工具。
+要在 Maven 中使用 Guava，您可以将以下依赖项添加到您的 pom.xml 文件中：
+<dependency>
+    <groupId>com.google.guava</groupId>
+    <artifactId>guava</artifactId>
+    <version>30.1-jre</version>
+</dependency>
+```
+
+
+
 ### stream流
 
 ```java
@@ -900,8 +920,6 @@ public class TypeParserFactory {
 
 ### int与Integer
 
-
-
 ```sql
 #案例
 java中int 和Inteter声明的变量有什么区别？为什么int a = 12345678; int b =12345678; a==b返回的是true ,
@@ -920,6 +938,10 @@ java中int 和Inteter声明的变量有什么区别？为什么int a = 12345678;
 ```
 
 
+
+**注意"9".equals(9)是不等的**
+
+一般用于同类型比较，如果String和int标记是不同的
 
 
 

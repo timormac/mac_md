@@ -387,10 +387,6 @@ Hive是一个建立在Hadoop上的数据仓库工具，它最初是使用MapRedu
 
 # hive客户端
 
-### 执行hql方式
-
-
-
 
 ### hiveserver2
 
