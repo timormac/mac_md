@@ -1083,7 +1083,14 @@ select "a1",explode(array) from the_nba_championship;
 
 ```
 
+#### 部门最早创建的人(不开窗取一条)
 
+```sql
+select 
+split (  max( concat(createtime,"|", userid )),"|",2 ) as userid 
+from tb
+group by subject
+```
 
 
 

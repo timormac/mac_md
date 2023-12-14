@@ -230,7 +230,7 @@ pom里配置了这个
 
 
 
-### 报错:kafka.consumer.OffsetResetStrategy
+### kafka.consumer.OffsetResetStrategy
 
 ```mysql
 #报错
@@ -247,6 +247,12 @@ echo 'classloader.resolve-order: parent-first' >> flink/conf/flink-conf.yaml
 https://stackoverflow.com/questions/72266646/flink-application-classcastexception
 
 ```
+
+
+
+### flink参数设置单容器核数不生效
+
+因为容量调度里里是按内存分核的，所以要改yarn的配置。是yarn的问题
 
 
 
@@ -332,6 +338,36 @@ Flink的反压机制是通过以下方式实现的：
 
 
 
+#### 反压失效
+
+```
+在 Apache Flink 和 Apache Spark 中，反压（backpressure）或背压（backpressure）机制是为了防止流处理系统在处理能力受限时被过载的一种措施。这些机制通常在可控的数据源（如 Apache Kafka）中效果最佳，因为可以根据处理能力调整数据拉取的速率。
+
+但是，确实存在一些数据源是推送型（push-based）的，而不是拉取型（pull-based），在这种情况下，数据的生产者会按照自己的节奏发送数据，而不考虑消费者的处理能力。这种情况下，反压机制可能就不那么有效了，因为数据源不会响应消费者的压力信号。
+
+以下是一些可能导致反压机制不生效的场景：
+
+1. **HTTP推送型数据流**：如果一个服务通过HTTP POST请求推送数据到流处理系统，流处理系统可能没有办法告诉发送方减慢发送速度。
+
+2. **物联网（IoT）设备**：许多IoT设备会按照固定的间隔发送传感器数据。这些设备可能不会响应来自流处理系统的反压信号，因此在数据量激增时可能会导致问题。
+
+3. **实时数据库变更数据捕获（CDC）**：某些数据库的CDC工具会推送变更事件到流处理系统，而这些工具可能不支持基于消费者反压的流控制。
+
+4. **日志文件监控**：例如，监控日志文件并将新行推送到流处理系统的工具可能不会响应消费者的处理能力。
+
+5. **传统消息队列**：一些较旧的或简单的消息队列系统可能不支持背压，它们可能会持续推送消息而不考虑消费者的处理速率。
+
+在这些场景下，如果流处理系统无法处理输入的速度，可能会出现内存溢出、延迟增加或其他性能问题。为了缓解这些问题，可能需要采取其他策略，比如：
+
+- **增加处理能力**：通过增加更多的处理节点或提高每个节点的资源来处理更高的负载。
+- **限流**：在数据进入流处理系统之前应用限流策略，比如在API网关层面限制请求速率。
+- **缓冲和溢写**：使用缓冲区来吸收短时间内的高负载，并在必要时将数据溢写到磁盘或其他存储。
+- **数据抽样**：在无法处理全部数据时，选择性地只处理数据的一个子集。
+- **优先级队列**：对进入的数据进行优先级排序，确保处理最重要的数据。
+
+总的来说，对于那些不支持或不完全支持反压的数据源，系统设计时需要考虑到这一点，并采取适当的措施来确保系统的稳定性。
+```
+
 
 
 #### 查看资源利用情况
@@ -346,6 +382,159 @@ Flink中，可以通过监控和度量指标来查看任务的资源使用情况
 通过综合使用上述方法，您应该能够获得关于任务资源使用情况的全面了解，从而判断是否给任务分配了过多的资源。如果任务的资源使用率较低，可以考虑减少任务的并行度或调整资源分配，以更好地利用资源。
 
 
+
+#### flink精准一次性消费
+
+如果某一个值是kakfa数据字段累加的话，为了保证一次性消费，第一个就是相加之后提交offset，
+
+如果这时候kafka那边出现问题了，那么offset没有提交成功。下次开起后还会再重新再消费一次。
+
+为了保证下游幂等性操作，把消息的transitionid存在集合里，大概10条，定期删除。每次累加去集合里遍历。
+
+这样多次消费同一条数据也没事，其实设置一条就行了。
+
+
+
+#### flink到hive精准一次
+
+~~~java
+在 Flink 流处理中实现从 Kafka 到 Hive 的精准一次性消费（exactly-once semantics），你需要使用 Flink 提供的事务性写入特性和状态后端来保证状态的一致性。下面是一些关键步骤来实现这个需求：
+
+1. **启用 Checkpointing**: Flink 通过 Checkpointing 机制来保证状态的一致性和故障恢复。你需要在你的 Flink 程序中启用并配置 Checkpointing。
+
+    ```java
+    StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
+    env.enableCheckpointing(10000); // 启用 Checkpoint，例如每 10 秒钟进行一次
+    ```
+
+2. **选择状态后端**: 状态后端用于存储状态和控制 Checkpoint 的存储位置。Flink 支持多种状态后端，如 RocksDB、FsStateBackend 等。
+
+    ```java
+    env.setStateBackend(new RocksDBStateBackend("hdfs:///flink/checkpoints", true));
+    ```
+
+3. **配置 Kafka 消费者**: 使用 Flink Kafka Connector，配置 Kafka 消费者以使用 Flink 的 Checkpoint 机制。
+
+    ```java
+    Properties properties = new Properties();
+    properties.setProperty("bootstrap.servers", "localhost:9092");
+    properties.setProperty("group.id", "test");
+    FlinkKafkaConsumer<String> kafkaConsumer = new FlinkKafkaConsumer<>(
+        "topic",
+        new SimpleStringSchema(),
+        properties
+    );
+    kafkaConsumer.setStartFromGroupOffsets(); // 从 Kafka 的 committed offset 开始消费
+    ```
+
+4. **启用 Kafka 的事务性写入**: 当你将数据写入 Hive 时，你需要确保这个过程是事务性的。在 Flink 中，你可以使用 `TwoPhaseCommitSinkFunction` 来实现事务性的写入。
+
+5. **实现自定义 Sink**: 由于 Hive 不支持幂等写入，你可能需要实现自己的 `SinkFunction` 或 `TwoPhaseCommitSinkFunction`，在这个 Sink 中，你将控制写入 Hive 的过程，并利用 Hive 的事务特性（如果可用）来保证精准一次性的语义。
+
+6. **处理重启和失败**: 当 Flink 任务失败并重启时，它会从最后一个成功的 Checkpoint 恢复。这意味着，如果你的 Sink 实现正确，你的 Flink 任务会从上一个一致的状态开始重新处理数据，而不会导致数据重复。
+
+7. **手动提交 Offset**: 通常，你不需要手动提交 Kafka offset，因为 Flink Kafka Consumer 集成了 Flink 的 Checkpointing 机制，这会确保 offset 在 Checkpoint 时自动提交。
+
+8. **确保 Hive 支持 ACID 操作**: 如果你使用的是 Hive 3.x 以上版本，Hive 支持事务表。确保你的 Hive 表是事务性的，这样你可以利用 Hive 的 ACID 特性来保证数据的精准一次性写入。
+
+这里是一个大概的代码示例框架，展示了如何集成 Kafka 消费者和自定义 Sink：
+
+```java
+StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
+env.enableCheckpointing(10000);
+env.setStateBackend(new RocksDBStateBackend("hdfs:///flink/checkpoints", true));
+
+Properties properties = new Properties();
+// 配置 Kafka 消费者属性
+properties.setProperty("bootstrap.servers", "localhost:9092");
+properties.setProperty("group.id", "test");
+FlinkKafkaConsumer<String> kafkaConsumer = new FlinkKafkaConsumer<>(
+    "topic",
+    new SimpleStringSchema(),
+    properties
+);
+kafkaConsumer.setStartFromGroupOffsets();
+
+DataStream<String> stream = env.addSource(kafkaConsumer);
+stream.addSink(new TwoPhaseCommitSinkFunction<...>(){
+    // 实现你的事务性写入逻辑到 Hive
+});
+
+env.execute("Flink Kafka to Hive Exactly-Once");
+```
+
+请根据你的实际需求调整以上示例。需要注意的是，实现精准一次性消费可能会增加系统的复杂性，并可能影响到吞吐量。在实际部署前，你应该充分测试并调优你的 Flink 应用程序。
+~~~
+
+#### table从kafka到hive精准一次
+
+```
+在 Apache Flink 1.17 版本中，Flink Table API 支持多种方式来与外部系统交互，并且它的设计目标之一就是简化流处理和批处理的统一编程模型。使用 Flink Table API 时，Flink SQL Client 或者编程接口可以让你以声明式的方式来定义数据流的处理和转换。
+
+对于从 Kafka 到 Hive 的精准一次性消费，Flink Table API 提供了一些内置的连接器和策略来支持这种需求。以下是实现这一目标的关键步骤：
+
+配置 Kafka Source: 使用 Flink Table API 创建 Kafka 表，这会自动管理 offset 存储和提交，从而支持故障恢复时的精准一次性消费。
+
+配置 Hive Sink: 使用 Flink Table API 创建 Hive 表，并配置相应的连接器属性。
+
+启用 Checkpointing: 对于 Table API，你也需要启用和配置 Checkpointing 来保证状态的一致性。
+
+使用 Flink SQL 或 Table API: 你可以使用 Flink SQL 或者 Table API 来定义数据的转换和处理逻辑。
+
+确保 Hive 版本和配置支持 ACID: 如果你使用的 Hive 版本支持 ACID 操作，确保你的 Hive 表是事务性的，并且 Hive Metastore 正确配置。
+
+下面是一个简化的示例，展示了如何使用 Flink Table API 来从 Kafka 读取数据并写入到 Hive 表：
+
+StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
+StreamTableEnvironment tableEnv = StreamTableEnvironment.create(env);
+
+// 启用 Checkpointing
+env.enableCheckpointing(10000);
+
+// Kafka Source 表
+tableEnv.executeSql(
+    "CREATE TABLE kafka_source_table (" +
+    "  `id` STRING," +
+    "  `data` STRING," +
+    "  `event_time` TIMESTAMP(3) METADATA FROM 'timestamp'," +
+    "   WATERMARK FOR event_time AS event_time" +
+    ") WITH (" +
+    "  'connector' = 'kafka'," +
+    "  'topic' = 'your-topic'," +
+    "  'properties.bootstrap.servers' = 'kafka-broker:9092'," +
+    "  'properties.group.id' = 'flink-group'," +
+    "  'format' = 'json'," +
+    "  'scan.startup.mode' = 'latest-offset'" +
+    ")"
+);
+
+// Hive Sink 表
+tableEnv.executeSql(
+    "CREATE TABLE hive_sink_table (" +
+    "  `id` STRING," +
+    "  `data` STRING," +
+    "  `event_time` TIMESTAMP(3)" +
+    ") PARTITIONED BY (dt STRING) STORED AS ORC TBLPROPERTIES (" +
+    "  'sink.rolling-policy.file-size' = '128MB'," +
+    "  'sink.rolling-policy.rollover-interval' = '15 min'," +
+    "  'sink.partition-commit.trigger' = 'partition-time'," +
+    "  'sink.partition-commit.delay' = '0 s'," +
+    "  'sink.partition-commit.policy.kind' = 'metastore,success-file'" +
+    ")"
+);
+
+// 插入语句
+tableEnv.executeSql(
+    "INSERT INTO hive_sink_table " +
+    "SELECT id, data, event_time, DATE_FORMAT(event_time, 'yyyy-MM-dd') as dt " +
+    "FROM kafka_source_table"
+);
+在上述代码中，我们定义了一个 Kafka 表作为 Source，一个 Hive 表作为 Sink，并且使用了一个插入语句将数据从 Kafka 流式传输到 Hive。Flink Table API 会在内部处理状态管理和 Checkpointing，以保证精准一次性消费。
+
+请注意，上述代码只是一个示例，你可能需要根据你的具体环境和需求进行调整。特别是，你需要确保 Hive 的配置支持事务性写入，并且你的 Hive 版本支持 ACID 特性。
+
+在使用 Flink Table API 时，一定要确保你已经正确配置了 Flink 的状态后端和 Checkpointing 参数，以及 Hive 的连接器参数，这样才能确保精准一次性的语义。
+```
 
 
 
