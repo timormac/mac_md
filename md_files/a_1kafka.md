@@ -277,27 +277,9 @@ kafka-topic.sh 什么都不输入，就会显示有哪些参数可以输出
 
 ### topic相关
 
-连接服务器  --bootstrap-server   lpc@project1:9092,project2:9092
+查看所有topic  
 
-指定主题	--topic
-
-查看所有topic    --list
-
-创建topic   --create
-
-删除topic  --delete
-
-修改topic   --alter
-
-topic详情   --describe
-
-设置topic分区数  --partitions
-
-设置topic副本数  --replication-factor
-
-更新系统默认配置  --config
-
-
+ kafka-topics.sh   --list  --bootstrap-server lpc@project1:9092 
 
 创建topic
 
@@ -311,11 +293,11 @@ kafka-topics.sh  --bootstrap-server  lpc@project1:9092  --delete --topic  name
 
 查看topic详情
 
-kafka-topics.sh --bootstrap-server dev@pre-13:9092 --describe --topic first
+kafka-topics.sh --bootstrap-server  lpc@project1:9092  --describe --topic first
 
 修改分区数
 
-kafka-topics.sh --bootstrap-server dev@pre-13:9092 /kafka --alter --topic first --partitions 6
+kafka-topics.sh --bootstrap-server   lpc@project1:9092  --alter --topic first --partitions 6
 
 
 
@@ -333,6 +315,8 @@ kafka-topics.sh --bootstrap-server dev@pre-13:9092 /kafka --alter --topic first 
 
 kafka-console-producer.sh   --broker-list     lpc@project1:9092   --topic   maxwell
 
+
+
 下面的是执行不了的
 
 kafka-console-producer.sh   ---bootstrap-server     lpc@project1:9092   --topic   maxwell
@@ -341,7 +325,17 @@ kafka-console-producer.sh   ---bootstrap-server     lpc@project1:9092   --topic 
 
 2 消费topic数据
 
-kafka-console-consumer.sh --bootstrap-server dev@pre-13:9092 --from-beginning  --topic aaa
+kafka-console-consumer.sh --bootstrap-server lpc@project1:9092 --from-beginning  --topic a --group group1
+
+
+
+3查看消费者组的偏移量，不能指定话题
+
+kafka-consumer-groups.sh --bootstrap-server   lpc@project1:9092 --group my_group1   --describe
+
+4查看有哪些消费则组
+
+kafka-consumer-groups.sh --bootstrap-server project1:9092    --list
 
 # kafka优化
 

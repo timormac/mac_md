@@ -213,6 +213,141 @@ Hive查询的手动优化通常涉及对查询本身、数据模型和Hive配置
 
 
 
+# hive配置spark引擎
+
+### hive on spark(需要安装spark)
+
+```mysql
+Hive on Spark需要安装Spark的原因是为了在Hive查询执行过程中利用Spark引擎的计算能力和优化功能。尽管可以使用HDFS上指定的Spark相关库包，并通过YARN执行Hive查询，但这种方式只是将Spark作为一个独立的计算框架，与Hive的集成性和优化能力有所不同。以下是一些原因解释为什么要安装Spark来集成Hive：
+
+集成优化：Hive on Spark集成了Hive和Spark两个框架，可以充分利用Spark的计算引擎和优化功能来加速Hive查询的执行。通过将数据加载到Spark的内存中执行计算，可以提高查询性能。
+
+动态资源分配：Spark提供了动态资源分配的功能，可以根据查询的需求自动分配和释放计算资源。这使得在多个查询之间进行资源管理更加灵活和高效。
+
+并行计算：Spark引擎支持并行计算，可以将查询分成多个任务并在集群中的多个节点上并行执行。这种并行计算的能力可以加速查询的执行速度。
+
+内存管理：Spark引擎具有先进的内存管理功能，可以将数据缓存在内存中以提高查询性能。这对于处理大规模数据集特别有用。
+
+扩展性：Spark是一个通用的计算引擎，可以处理各种类型的计算任务，包括批处理、流处理和机器学习等。通过安装Spark，可以将Hive与其他Spark生态系统的组件集成，如Spark Streaming、Spark SQL和MLlib等。
+
+总而言之，通过安装Spark并将其作为Hive的计算引擎，可以获得更高的查询性能、更好的资源管理、更灵活的计算能力和更广泛的生态系统集成。这使得Hive on Spark成为处理大规模数据集和复杂查询的理想选择。
+```
+
+
+
+### hive3.1.2兼容spark3.0.0
+
+```mysql
+#hive3.1.2 和 spark3.0的引擎不兼容
+因为hive3版本，里面调用了spark2.4版本的类，有的类在spark3版本被删掉了等
+
+#如何兼容hive3和spark3
+1 spark3的纯净版jar包，即不含hadoop和hive，因为spark3里面的hive版本是2.4的，如果不排除也会出现冲突
+2 hive修改源码 详情看csdn  :  https://blog.csdn.net/rfdjds/article/details/125389450
+
+大概流程就是，先将hive源码下载，然后更改spark版本是3.0 ，然后编译的时候，看地方报错了，手动将报错的地方更换到3.0版本对应的类和方法。
+
+#纯净包下载，上传hdfs(为了减少每次上传时间)
+https://spark.apache.org/downloads.html
+开头只有3.5版本，去最下面找到release archeive能找到历史版本
+选择spark3.0.0-without-hadoop这版本，
+
+#配置相关文件，和复制jar包到hive的lib下
+之前的解压版jar包lib库，已经是他们给配好的了，详细看博客。https://blog.csdn.net/rfdjds/article/details/125389450
+
+
+
+
+```
+
+
+
+### 配置流程
+
+~~~sql
+要在Hive 3.1.2中集成使用Spark引擎，你需要进行一系列的配置和安装步骤。以下是详细的步骤：
+
+### 1. 确认兼容性
+
+首先确保你的Spark版本与Hive 3.1.2兼容。通常，Apache Hive的发布说明或官方网站会有与特定Hive版本兼容的Spark版本列表。截至我所知的最新信息，你可以考虑使用Spark 2.4.x版本，因为它通常与Hive 3.x版本兼容。
+
+### 2. 下载Spark
+
+你可以从Apache Spark的官方网站下载Spark的“预构建包”：
+
+- 访问[Apache Spark下载页面](https://spark.apache.org/downloads.html)。
+- 选择与Hive兼容的Spark版本。
+- 选择“预构建包”来下载编译好的版本，通常是针对特定版本的Hadoop预构建的。
+- 下载.tar.gz格式的文件。
+
+### 3. 安装Spark
+
+- 将下载的Spark压缩包解压到你的系统上。
+- 设置`SPARK_HOME`环境变量，指向你解压Spark的目录。
+
+### 4. 配置Hive以使用Spark
+
+编辑Hive的配置文件`hive-site.xml`，通常位于`$HIVE_HOME/conf`目录下，添加或修改以下属性：
+
+```xml
+<property>
+    <name>hive.execution.engine</name>
+    <value>spark</value>
+</property>
+
+<property>
+    <name>spark.master</name>
+    <value>yarn</value> <!-- 或者 local，取决于你的Spark运行模式 -->
+</property>
+
+<property>
+    <name>spark.home</name>
+    <value>/path/to/spark</value> <!-- 这里填写你的SPARK_HOME路径 -->
+</property>
+```
+
+如果你使用的是YARN，确保YARN配置正确，并且`yarn-site.xml`中的相关设置已经配置。
+
+### 5. 配置Spark
+
+编辑Spark的配置文件`spark-defaults.conf`，通常位于`$SPARK_HOME/conf`目录下，确保以下属性正确设置：
+
+```conf
+spark.master                    yarn
+spark.submit.deployMode         client
+spark.executor.instances        2
+spark.yarn.queue                default
+spark.executor.memory           1g
+spark.driver.memory             1g
+```
+
+这些值取决于你的集群大小和可用资源，你可能需要根据你的实际情况进行调整。
+
+### 6. 配置YARN
+
+如果你在YARN上运行Spark，确保你的`yarn-site.xml`配置了与Spark交互所需的所有参数。
+
+### 7. 测试配置
+
+完成配置后，尝试运行一个简单的Hive查询来测试Spark引擎是否正常工作。你可以使用Hive命令行界面来执行此操作。
+
+### 8. 遇到问题时查看日志
+
+如果遇到问题，查看Hive和Spark的日志文件以获取错误信息。这些日志文件通常位于`$HIVE_HOME/logs`和`$SPARK_HOME/logs`。
+
+### 注意事项
+
+- 确保所有的节点都安装了相同版本的Spark，并且所有的环境变量和路径都正确设置。
+- 你可能还需要在Spark上配置Hive的元数据仓库连接，这通常涉及到在Spark的`spark-defaults.conf`中设置`spark.sql.warehouse.dir`和`hive.metastore.uris`等属性。
+- 在进行配置更改时，应该在一台机器上测试这些更改，然后再在整个集群上进行部署。
+
+这个过程可能会根据你的具体环境和需求有所不同，所以请根据实际情况进行相应的调整。如果你在配置过程中遇到任何特定的错误或问题，你可以提供错误信息以便获得更具体的帮助。
+~~~
+
+
+
+
+
 # hive对比即席查询框架
 
 
@@ -506,30 +641,64 @@ Parquet：
 3. 使用适当的事务管理器，通常是 `org.apache.hadoop.hive.ql.lockmgr.DbTxnManager`。
 4. 为了实现事务，Hive 表必须是事务表。可以在创建表时使用 `TBLPROPERTIES ("transactional"="true")` 来指定。
 
-以下是一个简单的例子，说明如何在 Hive 中创建一个支持 ACID 操作的表：
 
-```sql
-CREATE TABLE students (
-    id INT,
-    name STRING,
-    age INT
-)
-CLUSTERED BY (id) INTO 4 BUCKETS
-STORED AS ORC
-TBLPROPERTIES ('transactional'='true');
+
+**创建acid表的流程**
+
+在 Hive 的配置文件中启用 ACID 支持。hive-site.xml，然后添加以下配置：
+
+```xml
+<property>
+  <name>hive.support.concurrency</name>
+  <value>true</value>
+</property>
+<property>
+  <name>hive.enforce.bucketing</name>
+  <value>true</value>
+</property>
+<property>
+  <name>hive.exec.dynamic.partition.mode</name>
+  <value>nonstrict</value>
+</property>
+<property>
+  <name>hive.txn.manager</name>
+  <value>org.apache.hadoop.hive.ql.lockmgr.DbTxnManager</value>
+</property>
+<property>
+  <name>hive.compactor.initiator.on</name>
+  <value>true</value>
+</property>
+<property>
+  <name>hive.compactor.worker.threads</name>
+  <value>1</value>
+</property>
 ```
 
-一旦创建了事务表，就可以执行标准的 SQL 更新和删除操作了：
+上述配置中的关键属性包括：
+
+- `hive.support.concurrency`：启用并发操作支持。
+- `hive.enforce.bucketing`：强制要求表进行分桶。
+- `hive.exec.dynamic.partition.mode`：设置动态分区模式为非严格模式。
+- `hive.txn.manager`：设置事务管理器为 `org.apache.hadoop.hive.ql.lockmgr.DbTxnManager`
+
+**建表必须分桶，目前只支持orc格式的acid**
 
 ```sql
+CREATE TABLE acid_table (
+    id String,
+    name STRING
+)
+partitioned by (dt date)
+CLUSTERED BY (id) INTO 4 BUCKETS
+STORED AS orc
+TBLPROPERTIES ('transactional'='true');
+
+--一旦创建了事务表，就可以执行标准的 SQL 更新和删除操作了：
 -- 更新操作
 UPDATE students SET age = 20 WHERE id = 1;
-
 -- 删除操作
 DELETE FROM students WHERE id = 1;
 ```
-
-
 
 这种方法类似于您提到的 HBase 的标记删除机制，其中多个相同的 rowkey 数据只会取时间最新的一条记录。在 Hive 中，这通过合并原始数据文件和 delta 文件中的变更来实现，确保读取操作总是返回最新的数据状态。
 
