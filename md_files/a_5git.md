@@ -283,6 +283,79 @@ git remote set-url origin   新地址，更改远程仓库地址
 
 ### 基本命令
 
+##### git pull做了什么
+
+当执行git pull orgin master --后
+
+```sql
+#下面是 git reflog记录
+1174b66 (HEAD -> master) HEAD@{0}: pull origin master --rebase (finish): returning to refs/heads/master
+1174b66 (HEAD -> master) HEAD@{1}: pull origin master --rebase (pick): mac-test
+5242c08 (origin/master) HEAD@{2}: pull origin master --rebase (start): checkout 5242c0829f2e059f5fd1
+edc495e HEAD@{3}: commit: mac-test
+7ab28f5 HEAD@{4}: commit: 12-17git版本冲突实验
+
+#分析
+7ab28f5是创建文件,是winodw和mac共同的版本开始  
+edc495e  mac-test是mac修改后commit的版本
+5242c08查看了，是windows修改commit提交后的版本号
+1174b66 就是把edc495e当前mac的commit提交 和windows的commit提交合并后的仓库版本
+
+#总结
+git pull会直接把github的最新版本与最后一次commit的版本进行merge，然后直接在commit的仓库区生成新版本，所以pull后不需add
+因为git pull会直接合并到仓库区, 所以在pull前，都会提示请将工作区代码commit不然会被覆盖。
+git status比较的是工作区和最新仓库区的差别
+
+```
+
+
+
+
+
+##### 版本冲突测试
+
+```sql
+#最开始文件               winodw              mac
+这一行是大家都要的   			这一行是大家都要的			这一行是大家都要的
+这一行是大家都要的					windows修改了这一行		这一行是大家都要的
+												windows加入了这一行		mac增加了这一行
+												
+#当各仓库commit后,pull情况
+window推到github上，mac执行git pull --reabase ,发现能直接合并，这种修改方式不会出现无法merge的情况。
+虽然第二行被winodows改了,但是mac合并不会报错，并不会发现被别人修改了。
+
+#合并后
+这一行是大家都要的
+windows修改了这一行
+windows加入了这一行
+mac增加了这一行
+
+
+#第二版本
+
+#公共状态
+这一行是大家都要的
+windows修改了这一行
+windows加入了这一行
+mac增加了这一行
+
+#windows状态
+第二次windows修改了地一行，同时删除了第4行内容为"mac增加了这一行"
+windows删除了这一行
+windows加入了这一行
+
+#mac提交的状态
+第二次mac修改了第一行
+windows删除了这一
+windows加入了这一行
+mac增加了这一行
+mac又增加了这一行
+
+
+```
+
+
+
 ##### git指令详解
 
 ```sql
