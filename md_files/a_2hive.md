@@ -537,6 +537,30 @@ CREATE DATABASE [IF NOT EXISTS] database_name
 [WITH DBPROPERTIES (property_name=property_value, ...)];
 ```
 
+#### 外部表(对接hbase)
+
+hive创建外部表external，根本用处，不是为了删除时不删表。
+
+而是对接其他在hdfs处理的数据库或者文件系统，能直接形成映射，这样删表时，不会删其他数据库的表，比如hbase
+
+**对接hbase原理**
+
+
+
+```sql
+#生成执行计划：
+Hive会生成一个执行计划，这个计划通常是一个MapReduce作业。在这个执行计划中，Hive会包含读取HBase数据的必要步骤。
+#读取HBase数据：
+在执行阶段，Hive的MapReduce作业会启动，并且会使用HBase的API来读取数据。如果你的查询包含过滤操作，Hive会尝试推送这些过滤到HBase层，以减少需要传输到Hive的数据量。
+#Map阶段：
+在Map阶段，Hive会使用TableInputFormat（或者相似的InputFormat）来读取HBase中的数据。这个InputFormat负责将HBase的数据转换为Hive能够理解的格式。如果有可能的话，过滤操作会在这个阶段应用到HBase的扫描上，这样就不会读取所有的数据，而是只读取符合条件的行。
+读取HBase数据：Map任务使用HBase的API来读取数据。Hive会尝试将查询中的过滤操作（some_column = 'some_value'）推送到HBase。
+#map数量
+对于Map任务的数量，Hive有一些机制来决定它们的数量：
+Splitting：Hive会基于InputFormat定义的split机制来决定Map任务的数量。对于HBase来说，一个split通常对应于一个region或者一部分region。如果表很大，并且分布在多个region中，那么Hive可能会启动多个Map任务来并行处理这些数据。
+数据分割：如果HBase表B跨越多个region，Hive可能会为每个region或region的一部分启动一个Map任务。这取决于HBase的InputFormat如何定义split。
+```
+
 
 
 #### 建表语句
@@ -568,6 +592,8 @@ collection items terminated by '_'  	--MAP STRUCT 和 ARRAY 的分隔符(数据�
 map keys terminated by ':'				-- MAP中的key与value的分隔符
 lines terminated by '\n';					-- 行分隔符
 ```
+
+
 
 #### stored储存方式
 

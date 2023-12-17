@@ -1,6 +1,6 @@
 
 
-# 系统环境
+# 系统环境变量
 
 1   环境变量配置完事之后要执行：source /etc/profile ,这行命令执行的是，将/etc/profile.d下的所有*.sh文件执行
 
@@ -11,6 +11,38 @@
 4 自定义脚本不用加入路径的话，就直接新建一个目录,然后在个人的环境变量中，把bin的path加进去，然后就可以了
 
 操作为，在~/.bashrc  中加入 PATH=$PATH:~/bin ,然后在～新建一个bin就行
+
+
+
+# 安装开源工具
+
+### src和bin包区别
+
+一般官网下载后，src.tar.gz是源码包, bin.tar.gz是二进制包
+
+src下载解压后比bin多了很多新的目录。
+
+**已hive的源码包为例**
+
+```sql
+#里面多了很多目录
+你会发现，整个hive的目录，是一个很大的maven项目,在hive当前目录下有pom文件。
+打开beeline,metastore,ql,common,service,serde等目录，发现都有pom文件，是hive大项目的子maven项目。
+
+你可以可以用idea打开，然后修改源码。然后用maven编译整个项目。
+```
+
+
+
+
+
+
+
+gz.asc和gz.sh256文件。这2个是官网下载的压缩包的校验文件，用来校验文件是否被人更改过。
+
+gpg --verify a.tar.gz.asc a.tar.gz 指令来校验文件
+
+
 
 
 
@@ -136,6 +168,7 @@ scp   ./cbk_kafka.jar    dev@pre-13:/home/dev/timor_dir
 查看隐藏文件  ls -a  
 显示目录下文件详细信息（读写权限，拥有者，文件大小，创建日期）   ls -l ( ll )  
 显示目录树结构  tree  或  tree  目录   
+查看当前目录下所有目录大小  du -sh */
 ```
 
 

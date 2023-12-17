@@ -395,12 +395,18 @@ git reset --hard 版本号
 
 #查看所有分支
 git  branch  
-#创建分支
+
+
+#创建分支(当前分支所在状态会复制过去)
 git  branch    分支名    
 #切换分支
 git checkout  分支名   
 #删除分支
 git  branch -d  分支名  
+
+#从远程仓库下载并在本地创建对应分支
+git checkout -b feature-branch origin/feature-branch
+
 
 
 //.gitignore文件只会影响尚未被跟踪的文件和目录,如果已经被git跟中，需要下面2个指令删除

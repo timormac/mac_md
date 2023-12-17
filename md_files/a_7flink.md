@@ -46,6 +46,165 @@ Checkpointing: Flink 支持周期性的检查点（checkpoint），这意味着�
 
 
 
+### flink写入hive速度如何
+
+hbase是依赖hdfs存储数据的，那么为什么通过hbase客户端插入数据那么快。而通过hive客户端执行“insert into table ”这个hql，就算插入一条数据也要将近20s，为什么呢？flink对接hive，是通过hive服务器插入数据？还是直接往hdfs上更改数据的？
+
+
+
+HBase 和 Hive 都是大数据生态系统中的重要组件，但它们的设计理念和使用场景有很大的不同，这也是导致它们在数据插入速度上有显著差异的原因。
+
+**HBase**
+
+HBase 是一个分布式的、面向列的 NoSQL 数据库，它以 HDFS 作为其底层存储，但是提供了一个可以随机实时读写数据的能力。HBase 的数据模型和存储机制允许它在单条记录层面上进行高效的读写操作。HBase 的写操作被直接写入内存中的 MemStore，然后定期刷新到磁盘上的 StoreFiles。这种设计允许 HBase 快速插入数据，因为它不需要像传统的 RDBMS 那样每次插入都进行磁盘 I/O。
+
+**Hive**
+
+Hive 是一个建立在 Hadoop 生态系统上的数据仓库工具，它将 SQL 查询转换成 MapReduce、Tez 或 Spark 作业来执行。Hive 的设计目标是为了处理大规模数据集的批处理作业，并且优化了读取大量数据的场景。因此，Hive 在执行数据修改操作（如插入）时，通常不如 HBase 那么快。Hive 的插入操作可能需要执行多个步骤，包括：
+
+1. 解析 HQL 语句。
+2. 生成对应的执行计划。
+3. 在 HDFS 上创建临时文件。
+4. 执行 MapReduce 或其他框架的作业来实际写入数据。
+5. 更新 Hive 元数据。
+
+这些步骤导致即使是插入一条数据也需要较长时间。
+
+**Flink 对接 Hive**
+
+Apache Flink 是一个流处理和批处理都支持的数据处理框架。当 Flink 对接 Hive 时，通常有两种方式：
+
+1. **通过 Hive 服务器插入数据：** Flink 可以使用 Hive 的 JDBC 驱动来连接 Hive 服务器，这时候 Flink 的作业会通过 Hive 服务来执行数据的插入操作。这种方式会受到 Hive 性能的限制，因为它是通过 Hive 来处理数据。
+
+2. **直接往 HDFS 上更改数据：** Flink 也可以直接写入 HDFS，绕过 Hive 的处理逻辑。在这种情况下，Flink 需要负责维护与 Hive 元数据兼容的数据格式，以及在作业完成后更新 Hive 元数据。这种方式可以更快地写入数据，因为它减少了 Hive 处理的开销。
+
+在实际使用中，选择哪种方式取决于具体的需求和架构设计。如果对实时性要求很高，可能会优先考虑直接写入 HDFS 的方式；如果对数据一致性和兼容性要求更高，则可能会通过 Hive 服务器来保证这些要求。
+
+
+
+##### 代码案例直接写hdfs
+
+要实现 Flink 直接向 HDFS 写入数据，而不是通过 Hive 服务器，你可以使用 Flink 的 `FileSystem` API。以下是一个简单的示例，展示了如何使用 Flink API 将数据直接写入 HDFS：
+
+```java
+import org.apache.flink.api.common.serialization.SimpleStringEncoder;
+import org.apache.flink.core.fs.Path;
+import org.apache.flink.streaming.api.datastream.DataStream;
+import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
+import org.apache.flink.streaming.api.functions.sink.filesystem.StreamingFileSink;
+
+public class FlinkHdfsSinkExample {
+    public static void main(String[] args) throws Exception {
+        // 设置 Flink 执行环境
+        final StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
+
+        // 创建一个简单的数据源
+        DataStream<String> text = env.fromElements(
+                "First line",
+                "Second line",
+                "Third line"
+        );
+
+        // 定义一个 StreamingFileSink，将数据写入 HDFS
+        final StreamingFileSink<String> sink = StreamingFileSink
+                .forRowFormat(new Path("hdfs://namenode:8020/path/to/destination"), new SimpleStringEncoder<String>("UTF-8"))
+                .build();
+
+        // 将 sink 添加到数据流
+        text.addSink(sink);
+
+        // 执行 Flink 作业
+        env.execute("Flink HDFS Sink Example");
+    }
+}
+```
+
+在这个示例中，`namenode` 是你的 HDFS NameNode 的地址，`8020` 是 HDFS 服务的端口号，而 `/path/to/destination` 是目标路径，你需要根据你的实际 HDFS 设置进行替换。`SimpleStringEncoder` 用于将字符串数据编码为字节，并写入 HDFS。
+
+关于第二个问题，当使用 Flink 的 Table API 并创建 Hive Catalog 时，Flink 会通过 Hive Metastore 客户端与 Hive Metastore 通信来访问 Hive 表的元数据。数据的实际写入操作可以通过 Flink 的文件系统连接器完成，这样 Flink 就可以直接将数据写入与 Hive 表相对应的 HDFS 文件中。这里，Flink 负责维护数据格式和目录结构，以确保它与 Hive 表的格式兼容。
+
+下面是一个使用 Flink Table API 和 Hive Catalog 的示例：
+
+```java
+import org.apache.flink.table.api.EnvironmentSettings;
+import org.apache.flink.table.api.TableEnvironment;
+import org.apache.flink.table.catalog.hive.HiveCatalog;
+
+public class FlinkHiveCatalogExample {
+    public static void main(String[] args) {
+        // 设置 Flink 表环境
+        EnvironmentSettings settings = EnvironmentSettings.newInstance().useBlinkPlanner().inBatchMode().build();
+        TableEnvironment tableEnv = TableEnvironment.create(settings);
+
+        // 创建 HiveCatalog
+        String name = "myhive";
+        String defaultDatabase = "default";
+        String hiveConfDir = "/path/to/hive/conf"; // Hive 的配置目录
+
+        HiveCatalog hive = new HiveCatalog(name, defaultDatabase, hiveConfDir);
+        tableEnv.registerCatalog("myhive", hive);
+
+        // 使用 HiveCatalog
+        tableEnv.useCatalog("myhive");
+
+        // 你现在可以使用 Flink Table API 执行操作，这些操作会反映在 Hive 中
+        // 例如，将一个 Table 写入 Hive 表
+        tableEnv.executeSql("INSERT INTO my_hive_table SELECT * FROM my_flink_table");
+    }
+}
+```
+
+在这个示例中，`/path/to/hive/conf` 是 Hive 配置文件（如 `hive-site.xml`）的目录。`my_hive_table` 是 Hive 中的表，而 `my_flink_table` 是 Flink 程序中的表。这段代码将 Flink 表的内容写入 Hive 表中，实际的数据写入是通过 Flink 直接对 HDFS 进行的，但是所有的元数据操作（如表结构的读取和更新）都是通过 Hive Metastore 完成的。
+
+请确保你的 Flink 环境已经配置了对应的 Hadoop 和 Hive 依赖，并且正确设置了相关的配置文件，以便能够与你的 Hive 和 HDFS 环境进行交互。
+
+
+
+在 Flink 中，控制数据写入 HDFS 的频率通常涉及到以下几个方面：
+
+1. **缓冲区大小（Buffer Size）**：在写入文件系统时，可以设置缓冲区大小，以便在刷新到磁盘之前在内存中积累更多的数据。
+2. **刷新间隔（Flush Interval）**：对于流式文件接收器（如 `StreamingFileSink`），你可以设置一个自动刷新的时间间隔，这样数据就会定期刷新到 HDFS。
+3. **检查点（Checkpointing）**：在 Flink 流作业中，启用检查点机制可以保证状态的一致性，同时也会触发数据的写入。
+
+以下是如何在 `StreamingFileSink` 中设置这些参数的示例：
+
+```java
+import org.apache.flink.streaming.api.functions.sink.filesystem.StreamingFileSink;
+import org.apache.flink.streaming.api.functions.sink.filesystem.rollingpolicies.DefaultRollingPolicy;
+
+import java.util.concurrent.TimeUnit;
+
+StreamingFileSink<String> sink = StreamingFileSink
+    .forRowFormat(new Path("hdfs://namenode:8020/path/to/destination"), new SimpleStringEncoder<String>("UTF-8"))
+    .withRollingPolicy(
+        DefaultRollingPolicy.builder()
+            .withRolloverInterval(TimeUnit.MINUTES.toMillis(15)) // 每15分钟滚动一次文件
+            .withInactivityInterval(TimeUnit.MINUTES.toMillis(5)) // 5分钟无数据写入时滚动文件
+            .withMaxPartSize(1024 * 1024 * 128) // 设置每个文件的最大大小为128MB
+            .build()
+    )
+    .build();
+```
+
+在这个配置中：
+
+- `withRolloverInterval` 设定了文件滚动的时间间隔，即使文件没有达到最大大小也会因为时间间隔而滚动。
+- `withInactivityInterval` 设定了如果在指定时间内没有新数据到来，当前的文件就会关闭并滚动。
+- `withMaxPartSize` 设定了每个文件的最大大小，达到这个大小后，当前文件会关闭并创建新文件。
+
+这些策略结合使用可以帮助你控制数据写入到 HDFS 的频率和时机。通过调整这些参数，你可以根据你的具体需求平衡写入的即时性和效率。
+
+除此之外，Flink 的检查点机制也会影响数据写入的行为。当启用检查点时，`StreamingFileSink` 会在每个检查点时刻保证至少有一次数据的持久化。检查点的间隔也可以配置，这样可以控制数据写入的最长延迟时间：
+
+```java
+// 设置检查点间隔
+env.enableCheckpointing(60000); // 每60秒执行一次检查点
+```
+
+上述配置会影响数据的写入频率，但是请注意，过大的缓冲区和过长的刷新间隔可能会导致在发生故障时丢失更多的数据。因此，设置这些参数时需要在数据可靠性和系统性能之间做出权衡。
+
+
+
 
 
 # 问题记录
