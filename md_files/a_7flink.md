@@ -8,6 +8,63 @@ p166-169没听
 
 # 注意事项
 
+### kafka的配置在哪找
+
+在import org.apache.kafka.clients.consumer.ConsumerConfig里可以看到，property里面可以设置哪些配置
+
+
+
+### checkponit和rockdb
+
+Checkpoint 是 Flink 中的一种机制，用于将任务的状态异步地持久化到持久化存储系统，以实现任务的容错性。Checkpoint 会将任务的状态数据写入到持久化存储中，以便在任务失败或重启时进行恢复。
+
+RocksDB 是 Flink 中的一种状态后端（State Backend），它用于将任务的状态数据持久化到本地磁盘上。RocksDB 状态后端使用 RocksDB 数据库引擎来管理状态数据的存储和访问。
+
+区别如下：
+
+1. **Checkpoint**：Checkpoint 是 Flink 中的容错机制，用于将任务的状态异步地持久化到持久化存储系统。Checkpoint 可以将状态数据持久化到分布式文件系统、对象存储或其他支持的存储系统中。它是一种任务级别的持久化机制，可以保证任务的状态在失败或重启时能够恢复。
+2. **RocksDB**：RocksDB 是 Flink 中的一种状态后端，用于将任务的状态数据持久化到本地磁盘上。RocksDB 使用 RocksDB 数据库引擎来管理状态数据的存储和访问。RocksDB 状态后端可以提供更高的状态容量，并且可以有效地处理大规模的状态。
+
+总结起来，Checkpoint 是 Flink 的容错机制，用于将任务的状态持久化到持久化存储系统，而 RocksDB 是 Flink 的一种状态后端，用于将任务的状态数据持久化到本地磁盘上。Checkpoint 可以选择使用 RocksDB 状态后端来实现状态的持久化。
+
+
+
+```
+Apache Flink 是一个分布式流处理框架，用于在高吞吐量和低延迟的情况下进行大规模数据处理。为了保证数据处理的一致性和容错性，Flink 提供了一种名为 "checkpoint" 的机制来定期捕获应用程序状态的快照。
+
+当开启 Flink 的 checkpoint 机制时，以下几个方面的信息会被定期保存：
+
+Operator State: 每个操作符（如map, reduce, filter等）可以有自己的状态，这些状态包括列表、映射等数据结构，用于保存中间计算结果。在checkpoint时，这些状态会被保存。
+
+Keyed State: 对于需要根据键值进行分区的操作符，Flink 会为每个键值维护一个状态。这种状态通常用于需要按键分组的操作，如 keyed windows 或 aggregations。checkpoint 会保存所有键的状态。
+
+Buffered Data: 数据在流向下一个操作符之前可能会在网络缓冲区中缓存。在checkpoint时，这些缓存的数据也会被保存，以确保在恢复时数据不会丢失。
+
+Program Counter: Flink 会保存程序的执行点，这样在恢复时可以从上一个checkpoint继续执行。
+
+Task State: 除了用户定义的状态外，Flink 还会保存任务的内部状态，例如当前正在处理的事件或定时器。
+
+当checkpoint被触发时，Flink 会将状态数据写入到预定义的持久化存储（比如HDFS、S3、RocksDB等）。状态的保存通常是以一种增量或差异的方式进行的，这意味着只有自上一个checkpoint以来发生变化的状态部分才会被保存。这样可以大大减少存储需求和checkpoint的时间。
+
+Flink 支持两种状态后端来存储状态信息：
+
+内存状态后端（MemoryStateBackend）：将状态作为对象存储在JobManager的内存中，适用于小状态的场景。在进行checkpoint时，状态会被序列化后存储到JobManager的内存中。
+
+文件系统状态后端（FsStateBackend）：将状态存储在TaskManager的内存中，但会将checkpoint写入到配置的文件系统（如HDFS）中。
+
+RocksDB状态后端（RocksDBStateBackend）：将状态存储在本地的RocksDB实例中，适合大状态的场景。在checkpoint时，改变的部分会被持久化到配置的文件系统中。
+
+开启checkpoint是为了确保即使在发生故障时，Flink作业也能从最近的一致状态恢复过来，从而保证数据处理的精确一次性（exactly-once）语义或至少一次性（at-least-once）语义。
+```
+
+
+
+### flink程序大状态存储
+
+如果状态很大的话，用rocks DB存，这个是存在本地磁盘的。
+
+如果用内存来存很大的状态的话，taskmanager要分配很大内存，即flink任务要申请很大内存，不划算
+
 ### 水位线不推进
 
 为了解决乱序问题，手动指定分区规则，4个分区，整除3漏了一个，导致有个分区一直没数据。
@@ -494,10 +551,6 @@ Flink是一个开源的流处理和批处理框架，用于大规模数据处理
    - 改进的状态管理：引入了增量快照的改进，提高了状态管理的效率和可靠性。
 
 这些是Flink版本中的一些重要特性，升级到较新的版本可能会带来更好的性能、功能和开发体验。然而，升级也可能需要进行一些工作，如代码迁移、配置更改、应用程序兼容性测试等。因此，在决定是否升级之前，建议您进行充分的评估和测试，以确保升级对您的业务有实际的益处。同时，还应该考虑与其他系统和工具的兼容性，以确保整个技术栈的稳定性和一致性。
-
-
-
-
 
 
 
@@ -1256,42 +1309,6 @@ flink能对接hive表,不过flink不是个流吗？难道能监控hive表中数�
 tableapi 虽然看着是流，不过会根据你的数据来源头，决定是流处理还是批处理，一个sql，多场景使用
 
 
-
-# Flink优化
-
-### 内存模型
-
-
-
-### 查看内存使用率
-
-```sql
-flink run \
--t yarn-per-job \  --不同flink版本提交指令不同，这个是统一的提交方式
--d \
--p 5 \ 指定并行度
--Dyarn.application.queue=test \ 指定 yarn 队列
--Djobmanager.memory.process.size=2048mb \ JM2~4G 足够
--Dtaskmanager.memory.process.size=4096mb \ 单个 TM2~8G 足够
--Dtaskmanager.numberOfTaskSlots=2 \ 与容器核数 1core：1slot 或 2core：1slot
--c com.atguigu.flink.tuning.UvDemo \
-/opt/module/flink-1.13.1/myjar/flink-tuning-1.0-SNAPSHOT.jar
-
-
-#如何确定内存分配情况
-在flink task manager看内存使用率，来确定内存分配是否过多。
-
-#如何有效利用内存
-队友有的状态后端，如果不用rocksdb，可以把有一个默认的0.1内存给设置为0，不然就是浪费了，永远用不上。
-
-#如何设置并定度与task里面的core数
-一个taskmanager 对应一个yarn container。一个contaioner里可以设置多个插槽。比如并行度是5，一个容易有3个核，那么2个taskemanager就可以了。但是为什么每个容器申请3个核，最后yarn只给一个核呢，和yarn的调度器规则有关系。
-具体原因："在flink调优的p4里5分钟开始"
-
-
-
-
-```
 
 
 

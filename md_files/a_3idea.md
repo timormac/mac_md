@@ -96,11 +96,13 @@ else-if +tab自动生成(){}
 
 双击shift 搜索
 
+查看类中所有属性和方法  command +F12
+
 查找方法对应代码   command+鼠标左键
 
 查看接口的实现类 control+H ,鼠标选中接口
 
-查找类中的方法 comman+F12，然后输入方法名字
+查找类中的方法 command+F12，然后输入方法名字
 
 返回查看方法进入的位置 command+option+左箭头,右箭头是再回去  windows是control+alt+左箭头
 
