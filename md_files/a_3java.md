@@ -349,6 +349,8 @@ String库
     }
 ```
 
+
+
 2 有一些源码abstract抽象类中，还会定义抽象类，而且这种内部抽象类也也可以在别的代码中实现
 
 例子：flink的KeyedProcessFunction抽象类中，定义了一个public abstract class Context{},通过control+H查找，

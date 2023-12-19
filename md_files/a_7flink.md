@@ -264,7 +264,19 @@ env.enableCheckpointing(60000); // 每60秒执行一次检查点
 
 
 
-# 问题记录
+# 问题待解决
+
+### flink源码没找到
+
+map方法传的函数到底在哪里被调用了。
+
+keyby返回的keyedStream，记录key的东西我没找到，正常应该有一个属性的，要么就是在下游的sum等算子里才存key。
+
+这里的keyby流只是形式话
+
+
+
+
 
 ### 可用slut为0但是能提交任务
 
@@ -318,11 +330,7 @@ fink任务每次临时下载jar包，那么如果我执行多个任务，下载�
 
 flink的分区策略有什么用，大部分flink是消费消息队列kafka，而kafka的API应该是有自己的数据发送模式，flink设置了应该没用
 
-### 三流join怎么实现
 
-  3流以上的join怎么实现的，目前用connect+ process只能实现2流join
-
- 有个问题就是窗口我之前的map流设置并行度为2，keyby返回的流不能设置并行度，但是用keyby获得的窗口默认并行度是8
 
 
 
@@ -414,6 +422,10 @@ A2_TopnWindowAll有个bug，就是总是报错.ArrayIndexOutOfBoundsException: -
 
 
 # 问题已解决
+
+### 三流join怎么实现
+
+看了下源码,connect流只能存2个流数据，当多流join，只能按照hql的解析方式，拆分为多个join任务，先关联一个处理后再关联下一个。你也可以自定义个一个connect流，然后自己生成多流join逻辑。
 
 ### 水位线不推进
 
@@ -810,7 +822,31 @@ UI端口 8081
 
 # flink-yarn模式
 
-### 会话部署(session)
+### seeion和application区别
+
+```sql
+Flink on YARN是Apache Flink在YARN上的一种运行模式，它利用YARN作为资源管理器和调度器来管理Flink作业的执行。在Flink on YARN中，有两种常见的提交任务方式：YARN session模式和YARN application模式。
+
+1. YARN Session模式：
+   - 在YARN session模式下，Flink作业以长期运行的Flink会话方式提交到YARN。这意味着Flink作业在提交后会一直运行，直到显式终止或发生错误。
+   - 在这种模式下，Flink作业共享同一个Flink集群，可以通过Flink命令行界面或REST接口提交作业，并可以在会话期间提交多个作业。
+   - YARN session模式适用于长时间运行的作业，例如流处理应用或长时间批处理作业。
+
+2. YARN Application模式：
+   - 在YARN application模式下，每个Flink作业都作为一个独立的YARN应用程序提交和执行。每次提交作业都会启动一个新的Flink集群。
+   - 在这种模式下，每个作业都有独立的资源分配和执行环境，作业之间相互隔离，互不影响。
+   - YARN application模式适用于短期运行的作业，例如一次性的批处理作业或短暂的流处理作业。
+
+选择使用哪种模式取决于你的具体需求：
+- 如果你需要长期运行的会话环境，并且希望在会话期间提交多个作业，那么YARN session模式是一个不错的选择。
+- 如果你有短期运行的作业，或者希望每个作业都有独立的资源和执行环境，那么YARN application模式更合适。
+
+总之，YARN session模式适用于长期运行的会话环境，而YARN application模式适用于短期运行的独立作业。选择适合你需求的模式可以更好地管理和调度你的Flink作业。
+```
+
+
+
+### yarn -session
 
 ```sql
 #会话模式场景
@@ -841,9 +877,10 @@ bin/flink run -d -t yarn-per-job -c WordCount a.jar
 hdfs://hadoop102:8020/a.jar
 
 #通过--help 指令查看帮助，可能用到的
+-D <property=value>使用给定属性的值  所以总是看到D开头的很长的
 -qu，——queue <arg>指定YARN队列。 
  -at，——applicationType <arg>为YARN上的应用设置自定义应用类型 
--D <property=value>使用给定属性的值 
+
 -d，——detached如果存在，则以分离模式运行作业 
 -h，——help Yarn会话命令行帮助。 
 -id，——applicationId <arg>附加到正在运行的YARN会话 
@@ -862,20 +899,7 @@ hdfs://hadoop102:8020/a.jar
 
 
 
-### 单作业模式
-
-```sql
-#使用场景
-单作业模式下，每个应用程序都会启动一个独立的Flink集群，并在应用程序执行完成后自动关闭。
-这种模式适用于需要独立部署和管理的单个应用程序，每个应用程序有自己的资源需求和环境要求。
-
-#启动命令
-bin/flink run -d -t yarn-per-job -c WordCount a.jar
-```
-
-
-
-### 应用模式
+### yarn-application
 
 ```sql
 #使用场景
@@ -902,38 +926,250 @@ hdfs://project1:8020/a.jar
 
 
 
+### 单作业模式(基本不用)
+
+```sql
+#使用场景
+单作业模式下，每个应用程序都会启动一个独立的Flink集群，并在应用程序执行完成后自动关闭。
+这种模式适用于需要独立部署和管理的单个应用程序，每个应用程序有自己的资源需求和环境要求。
+
+#启动命令
+bin/flink run -d -t yarn-per-job -c WordCount a.jar
+```
+
+
+
+
+
+# flink中概念
+
+### taskmanager
+
+是一个jvm进程，每个taskmanager，都需要启动个yarn的container
+
+slot时taskmanager的线程，taskmanager的jvm可以有多个线程slot
+
+### slot
+
+3个map算子到key by 到1个keyed算子，一共4个任务:3+1    3个slot就可以执行
+
+一个slot可以执行多个算子，既可以在map阶段算子，也可以处理reduce阶段的算子。
+
+如果某个算子工作量大，可以不设置slot共享，这样那个算子会单独占用一个slot。
+
+```
+如果没有其他算子也设置为1，那么就为独享
+map(s->s).slotSharingGroup("1") 
+```
+
+算子最大并行度 = task数*task的slot数
+
+
+
+### watermark
+
+watermark是用来保证事件时间乱序到齐的一种策略，并不一定要和窗口结合用。
+
+不过事件时间窗口，是经常需要处理乱序事件的，所以经常连用。
+
+如果不设置watermark那么窗口可能因为乱序提前关闭。
+
+
+
+watermark即当前真实时间 =   当前最大事件时间 - 延迟处理
+
+案例：窗口是1-10  延迟为3  那么当有一个15的事件时间来时，会把当前真实时间推到12，
+
+比12小的窗口都会关闭。
+
+
+
+### trigger
+
+是控制窗口何时关闭的组件。
+
+
+
+### 状态一致性
+
+有3个级别，exactly-once精准一次，atleast-once,atmost-once,
+
+flink内部通过checkpoint可以实现精准一次
+
+还有个概念端到端状态一致性：
+
+3个要求：
+
+source故障恢复时支持重读
+
+sink故障恢复时,要么支持事务写入可以就滚，要么支持幂等性
+
+checkpoint 记录source消费的位置,记录内部任务链状态，记录sink端写入状态
+
+
+
+如果sink端支持幂等性，那么checkpoint,直接读取上个保存点source坐标，不管后面数据是否已经写入sink了，重复写就行。
+
+如果不支持幂等性，那么必须支持事务写入，checkpoint的保存必须和那边的写入二阶段提交。二阶段提交是事务保证的一种方式
+
+
+
+```sql
+#两阶段提交
+在 Flink 中，两阶段提交（Two-Phase Commit，简称 2PC）是一种常用的事务处理机制，用于实现分布式系统中的事务一致性。它主要涉及到两个角色：事务协调器（Transaction Coordinator）和事务参与者（Transaction Participant）。
+下面是 Flink 中两阶段提交的工作流程：
+事务协调器发送预提交请求：当一个 Flink 作业需要执行事务写入时，事务协调器会向所有的事务参与者发送预提交请求。预提交请求包含了要写入的数据和事务的元数据。
+事务参与者执行预提交：事务参与者接收到预提交请求后，会执行相应的写入操作，并将写入的结果保存在本地的事务日志中，但此时并未将数据提交到源系统。
+事务协调器发送提交请求：当所有的事务参与者都执行了预提交操作后，事务协调器会向所有的事务参与者发送提交请求。
+事务参与者进行提交操作：事务参与者接收到提交请求后，会将之前的写入操作提交到源系统中。
+事务协调器发送最终提交或回滚请求：如果所有的事务参与者都成功提交了数据，事务协调器会发送最终提交请求，表示事务提交成功。否则，如果有任何一个事务参与者提交失败，事务协调器会发送回滚请求。
+事务参与者执行最终提交或回滚操作：事务参与者接收到最终提交或回滚请求后，会执行相应的操作。如果是最终提交请求，事务参与者会确认提交操作；如果是回滚请求，事务参与者会撤销之前的写入操作。
+通过这样的两阶段提交流程，Flink 可以保证在分布式环境下的事务一致性。然而，如果 Sink 的源不支持回滚操作，那么在事务失败时无法撤销之前的写入操作，这可能导致数据的不一致性。
+在这种情况下，Flink 无法完全保证事务的一致性，但可以通过其他手段来尽量减少数据不一致的风险。例如，可以使用幂等性操作来确保相同的数据重复写入不会产生副作用。此外，还可以通过监控和异常处理机制来及时发现和处理事务失败的情况，以减少数据不一致的影响。
+总之，Flink 中的两阶段提交机制在大多数情况下可以保证事务的一致性，但如果 Sink 的源不支持回滚操作，需要通过其他手段来尽量减少数据不一致的风险。
+
+#支持两阶段提交的sink数据源
+Flink 的 Sink 数据源并不是直接支持两阶段提交的事务，而是通过特定的 Sink 实现来实现事务一致性。以下是一些常见的 Flink Sink 实现，它们支持两阶段提交的事务：
+Flink JDBC Sink：Flink 提供了 JDBC Sink，可以将数据写入关系型数据库。通过配置合适的数据库和事务管理器，可以实现基于数据库的两阶段提交事务。
+Flink Kafka Sink：Flink 提供了 Kafka Sink，可以将数据写入 Kafka 主题。Kafka 本身支持事务，可以与 Flink 的事务机制结合使用，实现两阶段提交事务。
+Flink Elasticsearch Sink：Flink 提供了 Elasticsearch Sink，可以将数据写入 Elasticsearch。Elasticsearch 支持事务，可以通过配置合适的 Elasticsearch 版本和事务管理器来实现两阶段提交事务。
+```
+
+
+
+### flink精准一次到kafka
+
+```sql
+
+在 Apache Flink 中实现对 Kafka 的事务写入，确实需要使用 Flink 的 checkpoint 机制以及 Kafka 的事务支持。两阶段提交（2PC）是通过 Flink 的 FlinkKafkaProducer 实现的，这个生产者可以提供语义上的精确一次（exactly-once）的处理语义。
+请注意，为了实现精确一次的语义，你需要确保以下几点：
+Kafka 集群需要配置为支持事务（即：transactional.id 配置项需要被设置）。
+Flink 作业需要启用 checkpoint。
+使用的 FlinkKafkaProducer 需要配置为使用事务。
+
+
+#kafka配置文件支持事务
+首先，确保你的 Kafka 集群已经配置了事务支持。Kafka 代理（broker）的配置文件中应该包含如下设置：
+transaction.state.log.replication.factor=3
+transaction.state.log.min.isr=2
+
+#启用 checkpoint 和搭配 FlinkKafkaProducer。kafka通过幂等性+多次保证精准一次。
+
+public class KafkaExactlyOnceExample {
+    public static void main(String[] args) throws Exception {
+        StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
+
+        // 开启 checkpoint
+        env.enableCheckpointing(10000); // 比如每 10 秒钟进行一次 checkpoint
+
+        // 配置 Kafka 生产者
+        String kafkaServers = "localhost:9092"; // Kafka 集群地址
+        String kafkaTopic = "your_topic"; // Kafka 主题
+
+        Properties properties = new Properties();
+        properties.setProperty("bootstrap.servers", kafkaServers);
+        // 设置事务超时时间
+        properties.setProperty("transaction.timeout.ms", 60000 * 15 + "");
+        // 设置事务ID前缀，Flink 会为每个并行实例创建一个事务ID
+        properties.setProperty("transactional.id", "flink-tx-" + UUID.randomUUID().toString());
+
+        // 创建 Kafka 生产者
+        FlinkKafkaProducer<String> flinkKafkaProducer = new FlinkKafkaProducer<>(
+            kafkaTopic,
+            new SimpleStringSchema(),
+            properties,
+            FlinkKaf
+```
+
+
+
+### 状态存储后端选择
+
+state backend和checkpoint可以分开配置，老的flink文档说的不对：
+
+```sql
+#说的不准确，是可以分开存的
+• MemoryStateBackend
+state等状态,将它们存储在TaskManager的JVM堆上；而将checkpoint存储在JobManager的内存中。
+• FsStateBackend
+将checkpoint存到远程的持久化文件系统（FileSystem）上。而对于本地状态，跟MemoryStateBackend一样，也会存在TaskManager的JVM堆上。
+• RocksDBStateBackend
+将所有状态序列化后，存入本地的RocksDB中存储。
+```
+
+
+
+statebackedn和checkponit配置,当state很大的时候，适合用rocksDB
+
+```sql
+在Apache Flink中，算子状态（Operator State）和Checkpoint机制是紧密相关的。但是，Flink的状态后端（State Backend）和Checkpoint存储（Checkpoint Storage）是可以分开配置的。
+状态后端（State Backend）：这决定了Flink作业的状态是如何存储和维护的。Flink提供了多种状态后端，比如内存状态后端（MemoryStateBackend）、FsStateBackend（将状态作为TaskManager的本地文件系统上的文件存储）和RocksDBStateBackend（将状态存储在RocksDB中，RocksDB是一个嵌入式的key-value存储，适合大状态的场景）。状态后端不仅用于常规的状态管理，而且在Checkpoint时也会用到。
+Checkpoint存储（Checkpoint Storage）：这决定了Checkpoint数据是如何存储的。Checkpoint数据可以存储在不同的存储系统中，比如本地文件系统、HDFS等。Flink的Checkpoint机制确保了作业在发生故障时能够从之前的状态恢复。
+你可以选择RocksDBStateBackend作为状态后端来存储算子状态，这意味着算子状态会在本地的RocksDB数据库中维护，这对于大状态是很有用的，因为RocksDB可以有效地处理大量数据。然后，你可以配置Checkpoint存储将Checkpoint数据保存在HDFS上。这种配置可以通过Flink的配置文件或作业提交时的代码进行设置。
+例如，以下是如何在Flink配置中设置RocksDB作为状态后端和HDFS作为Checkpoint存储的示例：
+// 设置状态后端为RocksDB
+env.setStateBackend(new RocksDBStateBackend("hdfs:///flink/checkpoints", true));
+
+// 设置Checkpoint存储路径为HDFS
+env.getCheckpointConfig().setCheckpointStorage("hdfs:///flink/checkpoints");
+在这个例子中，状态后端使用了RocksDB，并且指定了一个HDFS路径来存储RocksDB的数据和Checkpoint数据。true参数表示启用增量Checkpoint，这意味着只有变化的部分会被写入到Checkpoint中，这可以大大减少Checkpoint的大小和Checkpoint的时间。
+请注意，这些配置需要根据你的具体Flink版本和部署环境来进行适当的调整。另外，确保Flink集群可以访问HDFS，且有适当的权限来读写指定的路径。
+```
+
+
+
 
 
 # —————FlinkAPI———————
 
+# flink连接器
 
+#### flink-kafka
 
-# pom依赖
+如何手动提交offset
 
-```xml
-    <properties>
-        <!--  写好flink版本，后续变更不需要每个都改，只改properties的属性    -->
-        <flink.verson>1.17.0</flink.verson>
-        <maven.compiler.source>8</maven.compiler.source>
-        <maven.compiler.target>8</maven.compiler.target>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    </properties>
+~~~sql
 
- <dependencies>
-   
-        <dependency>
-            <groupId>org.apache.flink</groupId>
-            <artifactId>flink-streaming-java</artifactId>
-            <version>${flink.verson}</version>
-        </dependency>
+1:通过设置`setCommitOffsetsOnCheckpoints`标志为`false`，你可以禁用自动offset提交，这意味着Flink不会在checkpoint时自动提交offset。
+2 设置 ENABLE_AUTO_COMMIT_CONFIG为"false"，这样kafka偏移量不会自动提交
 
-        <dependency>
-            <groupId>org.apache.flink</groupId>
-            <artifactId>flink-clients</artifactId>
-            <version>${flink.verson}</version>
-        </dependency>
-</dependencies>
+import java.util.Properties;
+
+public class KafkaExample {
+    public static void main(String[] args) throws Exception {
+        StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
+
+        Properties properties = new Properties();
+        properties.setProperty("bootstrap.servers", "localhost:9092");
+        properties.setProperty("group.id", "test");
+        // 设置为手动提交offset
+        properties.setProperty(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "false");
+
+        // 创建Flink Kafka Consumer
+        FlinkKafkaConsumer<String> flinkKafkaConsumer = new FlinkKafkaConsumer<>(
+                "topic_name",
+                new SimpleStringSchema(),
+                properties
+        );
+
+        // 禁用自动在checkpoint时提交offset
+        flinkKafkaConsumer.setCommitOffsetsOnCheckpoints(false);
+
+        // 添加source到你的Flink job
+        env.addSource(flinkKafkaConsumer).print();
+
+        // 执行Flink job
+        env.execute("Flink Kafka Manual Offset Commit Example");
+    }
+}
 ```
+
+在这个例子中，我们没有显示如何手动提交offset，因为这通常涉及到更复杂的逻辑，比如在你的Flink作业处理逻辑中跟踪已经处理的记录，并在确认处理完成后提交offset。
+
+要手动提交offset，你可能需要使用`KafkaConsumer`类中的`commitSync`或`commitAsync`方法。但是，这通常不是在Flink中推荐的做法，因为它可能与Flink的容错机制冲突。通常情况下，你会希望Flink在执行checkpoint时自动管理offset，以确保exactly-once语义。
+
+如果你确实需要在Flink中手动管理offset，你可能需要深入了解Flink的状态管理和checkpoint机制，并确保手动提交的offset与Flink的checkpoint对齐，以避免数据丢失或重复处理。
+~~~
 
 
 
@@ -971,6 +1207,8 @@ StreamExecutionEnvironment env = StreamExecutionEnvironment.createLocalEnvironme
 
 //环境设置并行度
 env.setParallelism(3);
+
+//也可以算子单独设置，比如最后sink时设置为1
 ```
 
 #### 算子链

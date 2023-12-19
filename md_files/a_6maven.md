@@ -210,6 +210,23 @@ java -cp target/classes:target/dependency/* com.example.Main
 
 # maven依赖冲突解决
 
+#### 案例1
+
+```
+在测flink反压的代码中，导入了flink-connector-kafka，这里下面引入了kafka-client 3.3.1版本
+我自己为了造数据导入kafka-2.4.5版本，导致有一个方法找不到。应该是引入低版本了，flink用的是高版本方法。
+
+通过idea的pom文件右键只能看到引入了哪些包，如果想要看引入包的版本，把移动到一个空的maven项目的pom下，执行mvn dependency:tree
+
+
+```
+
+
+
+#### 排查方法
+
+
+
 1  classsnotfound，基本就是jar包没找，或者依赖冲突问题
 
 ```sql
