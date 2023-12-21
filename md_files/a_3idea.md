@@ -6,11 +6,11 @@ java: 程序包lombok不存在.
 
 flink-1.17用不了，新建的就能用lombok不知道怎么回事
 
-#### 如何修改源码
 
-目前打开源码只能read only,
 
-请注意，你不能直接修改JAR包中的类文件。如果你需要修改框架的实际代码并重新打包，通常需要有框架的源代码，然后你需要按照框架的构建指南来修改并重新构建JAR包。对于开源框架，通常可以在项目的官方仓库中找到构建指南和源代码。对于添加注释的目的来说，上述步骤应该足够了。
+
+
+
 
 # idea问题已解决
 
@@ -43,6 +43,20 @@ settings=>complier=>java complier版本和project structure不同
 #### 无法运行:Commline is too long
 
 edit configuration => 在 include provided下面2行=》shorten command line 选 classpath file就行 
+
+#### 如何修改源码
+
+idea可以下载source的jar包，能看到源码注释,不过是临时解析的,不能修改，因为是个jar包格式。
+
+想修改源码做注释,要从官网或者github上下载源码,比如之前的hive源码包，还有github上的源码。
+
+下载到本地，才能修改。
+
+#### idea设置了global不生效
+
+将guava为global，并且也导入项目了，不过代码里还是找不到类别。
+
+因为导入的guava包选的是source.jar选错了这里没有.class文件。source.jar一般比.class要小
 
 
 

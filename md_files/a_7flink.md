@@ -822,6 +822,8 @@ UI端口 8081
 
 # flink-yarn模式
 
+
+
 ### seeion和application区别
 
 ```sql
@@ -966,27 +968,7 @@ map(s->s).slotSharingGroup("1")
 
 
 
-### watermark
 
-watermark是用来保证事件时间乱序到齐的一种策略，并不一定要和窗口结合用。
-
-不过事件时间窗口，是经常需要处理乱序事件的，所以经常连用。
-
-如果不设置watermark那么窗口可能因为乱序提前关闭。
-
-
-
-watermark即当前真实时间 =   当前最大事件时间 - 延迟处理
-
-案例：窗口是1-10  延迟为3  那么当有一个15的事件时间来时，会把当前真实时间推到12，
-
-比12小的窗口都会关闭。
-
-
-
-### trigger
-
-是控制窗口何时关闭的组件。
 
 
 
@@ -1177,6 +1159,22 @@ public class KafkaExample {
 
 # 环境与算子
 
+### flink如何确定task数量
+
+当你的并行度为9时，并且你的slot参数参数为2，那么会申请5个task。
+
+并行度/slot数。
+
+注意当禁用算子链，1个task 2个slot，可执行2个算子，slot是线程，虽然2个slot都在一个jvm执行，
+
+但是2个算子还是要序列化和反序列化，通过task的网络栈来传数据。
+
+算子链是很有用的。
+
+### changelog后端和checkpoint区别
+
+
+
 #### 环境获取
 
 getExecutionEnvironment()会自动识别，当在idea执行时会默认创建本地模拟集群。用flink脚本执行jar时，会识别创建远程集群自动传递yarn等参数。
@@ -1233,6 +1231,46 @@ Ds.map(v -> 10*v).disableChaining() //这个map算子不会和后面的合在一
 taskmanager.numberOfTaskSlots: 8
 
 需要注意的是，slot目前仅仅用来隔离内存，不会涉及CPU的隔离。在具体应用时，可以将slot数量配置为机器的CPU核心数，尽量避免不同任务之间对CPU的竞争。这也是开发环境默认并行度设为机器CPU数量的原因。
+
+
+
+# flink各种流（待补充完整）
+
+普通流    map ,fliter,process等获得的
+
+窗口流   window()方法获取的
+
+按键分区流
+
+广播流
+
+
+
+stream流的2个方法process,window
+
+winod
+
+process的实现类倒是没有什么，就一个processfuction
+
+滚动窗口，滑动窗口都是基于processWindowFunction的实现类。
+
+
+
+### processFunction
+
+### processWindowFunction
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -1391,6 +1429,30 @@ process的方法，可以拿到context上下文，这个context能拿到侧输�
 
 
 窗口迟到数据进入不到窗口的,
+
+
+
+### watermark
+
+watermark是用来保证事件时间乱序到齐的一种策略，并不一定要和窗口结合用。
+
+不过事件时间窗口，是经常需要处理乱序事件的，所以经常连用。
+
+如果不设置watermark那么窗口可能因为乱序提前关闭。
+
+
+
+watermark即当前真实时间 =   当前最大事件时间 - 延迟处理
+
+案例：窗口是1-10  延迟为3  那么当有一个15的事件时间来时，会把当前真实时间推到12，
+
+比12小的窗口都会关闭。
+
+### trigger
+
+是控制窗口何时关闭的组件。
+
+### 
 
 
 
