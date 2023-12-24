@@ -4,165 +4,81 @@ p56可以重听
 
 p66-p73跳过了，先听dwd 听到76
 
-# 明日待做
 
-代码逻辑有问题，应该是获取config表的字段，然后流数据过滤掉字段。
 
-并且如何在算子中创建链接
+# 实时个人优化(待做)
+
+### 缓存层
+
+视频里维表关联是在hbase每条读取,可以做一个缓存层,存在flink，
+
+没有的去mysql访问, mysql变更会更新过来,设置ttl防止越来越大，定期清理
+
+### 分流(待定)
+
+mysql一个库所有表都监控到一个topic里是否有问题呢，待定
+
+
 
 
 
 # 问题记录
 
-### 查看流中具体谁调用的map
+### 广播状态重启没恢复
 
-flink流中,点进去都是借口，我想看到是哪个对象，调用的传入的map方法。
-而且这个对象是在哪里创建的？创建的代码在哪里，目前找不到
-
-```java
-//想找到map里的print1是谁弄的
-SingleOutputStreamOperator<String> map = kafkaDS.map(s -> {
-    System.out.println("1");
-}
-                                                     
-//找到上一行是 processElement()方法调用了map                                            
-public class StreamMap<IN, OUT> extends class AbstractUdfStreamOperator {
-    @Override
-    public void processElement(StreamRecord<IN> element) throws Exception {
-      //想知道这个output是什么
-        output.collect(element.replace(userFunction.map(element.getValue())));
-    }
-}
-                                                     
-//现在想知道这个output是，找到的是抽象类的一个属性。因为上面StreamMap继承了下面的类，所以能直接用output
-public abstract class AbstractStreamOperator<OUT>{
-protected transient Output<StreamRecord<OUT>> output;
-}
-///现在想知道的就是这个 StreamMap类的对象在哪里？？谁创建的 ？？怎么找呢                                              
-                                                                                                    
-```
-
-### 实时数仓有些为什么不用后端做
-
-一些业务场景,在下面数仓库出现背景中，有一些我觉得用后端做会很简单，为什么大数据做
+广播状态启动时，没有从checkpoint恢复过来，不知道为什么。                                                                                        
 
 
 
 ### 杂碎问题待解决
 
-a  在flink中用到代码中的集合,那么这个集合的是每个并行度分开自有的吗
+5  flink是如何实现2个流的交互的，我自己写不出来,都是while true来拉取，没法交互，只能用多线程来实现了，可以尝试下
 
-1 就是通过mysql采集的数据，经处理之后，但是突然订单的完成状态修改了，从下单，到付款了，但是下单状态已经处理过了，这种修改操做后续怎么处理。
-
-2 调度框架，编写脚本时，怎么获取每个job任务执行的返回值，判断job是否正确完成了呢？
-
-3 maxwell通过kafka传到ods层，那么对于变更的数据怎么，同步到hdfs上呢？增加的好弄，变更的怎么弄
-
-原来的是通过sql批量处理，覆盖重写。
-
-4 开发一个mysql ddl转hive ddl的脚本
-
-5  kafka是如何实现2个流的交互的，我自己写不出来,都是while true来拉取，没法交互，只能用多线程来实现了，可以尝试下
+  是用回调函数吗？
 
 6 做一个功能，根据mysql表名，查到的查询集，自动封装成对应dao类的集合，现在不知道怎么实现
 
-7  flink中关于集合的运用，在外面创建的集合和内部集合的分布式问题，是否是每个并行度单独有自己的集合
-
-8 理解一下flink中哪些代码会多次执行，为什么连接池技术可以被多个并行度获取，是每个并行度自己建立链接池吗
-
 # 问题已解决
-
-### kafka反序列化类找不到
-
-之前没问题的代码，执行时突然报错找不到反序列化器
-
-NoClassDefFoundError: org/apache/flink/api/common/serialization/DeserializationSchema
-
-因为pom文件中的依赖是 provided，执行时不带入
-
-
-
-
-
-
-
-### jdbc没有时分秒
-
-mock数据的时候,mysql只有日期没有时分秒，mysql中的时间类型，Date,DateTime,TimeStamp。不过这里的timestamp并不是时间戳，也是日期格式。jdbc里应该用setTimstamp插入数据，我用的是setDate. Date只有年月日
-
-### 执行找不到类
-
-运行代码找不到类,不过自己手动能找到这个类，因为pom配置的是provided，运行时不会把依赖带进去
-
-两种解决方式：1 把provided去掉
-
-2 点进run=》点击edit configrations=>edit template=>applictions=>modify options=>add denpendency with provided
-
-这个模版配置一次，以后就不用配置了.windows上的操作是run=>edit configrations=>application选中类名=> configuration=>勾选provided
-
-### 侧输出流:POJO报错
-
-POJO type expected but was: String
-
-String 不满足POJO类型
-
-```
-/*Flink对POJO类型的要求如下：
-        l 类是公有（public）的
-        l 有一个无参的构造方法
-        l 所有属性都是公有（public）的
-        l 所有属性的类型都是可以序列化的
-```
-
-源码报错问题所在
-
-```java
-OutputTag wrongStream = new OutputTag("s1stream", Types.POJO(String.class));
-
-//这是Types.POJO方法的代码，源码在这里
-public static <T> TypeInformation<T> POJO(Class<T> pojoClass) {
-    final TypeInformation<T> ti = TypeExtractor.createTypeInfo(pojoClass);
-    if (ti instanceof PojoTypeInfo) {
-        return ti;
-    }
-    throw new InvalidTypesException("POJO type expected but was: " + ti);
-}
-```
-
-
-
-### 连接不能序列化
-
-数据库连接不能序列化是因为连接对象包含了底层的网络连接和状态信息，这些信息无法被序列化
-
-在process中不想每次都新建一个连接，所以提出来了，然后报错链接不能序列化。
-
-在addsink算子中，创建的hbaseconnect不会报错，但是在process算子中就报错
-
-```java
-SingleOutputStreamOperator<JSONObject> needDimDs = connect.process(new CoProcessFunction() {
-    HashSet<String> configSet = new HashSet<>();
-    HbaseConnect hbaseConnect;
-}
-```
-
-gpt给的答案是ds.mapPartition里面创建数据库连接，这个是对一个分区的数据整体处理，这个应该是批计算。
-
-流计算gpt给的答案是用数据库连接池技术管理，用的时候拿一个，用完归还。但是hbase没有连接池
-
-个人理解: 
-
-  				数据库连接池的创建，应该是每个并行度会自己加载一次连接池在java虚拟机中,所以连接虽然不能序列化
-
-​				  但是连接池获取的链接在各个并行度中是可以重复使用的。
-
-​				  写在算子外面的代码获取链接因为无法序列化所以不能传递到算子里面
-
-
 
 ### habase建表已存在
 
-因为建表语句写在广播变量里面，导致建表执行了4次，报错表已存在，应该是多线程问题导致的，代码在A1_GetData里
+因为建表语句写在广播变量里面，导致建表执行了4次，报错表已存在，应该是多线程问题导致的,
+
+第一次查询都是没有查到，4个一起执行建表，然后报错了。
+
+
+
+# 代码问题记录
+
+### 其他小问题
+
+```sql
+#kafka反序列化类找不到
+之前没问题的代码，执行时突然报错找不到反序列化器
+因为pom文件中的依赖是 provided，执行时不带入
+
+#jdbc没有时分秒
+mock数据的时候,mysql只有日期没有时分秒，mysql中的时间类型，Date,DateTime,TimeStamp。不过这里的timestamp并不是时间戳，也是日期格式。jdbc里应该用setTimstamp插入数据，我用的是setDate. Date只有年月日
+```
+
+
+
+### dim
+
+```sql
+#思路错误
+最开始的思路，是想用一个process做，会出现问题。因为是多个并行度，一个process做处理，用map存config表，那么其他并行度是获取不到config信息的，无法更新。所以必须2步走，先过滤config,再过滤维度表
+
+#不keyby不能用mapstate
+没有keyby操作,所以mapstate是keyed流状态没法用
+
+#keyby流连接普通流不能用keyedcoprocess
+因为不keyby不能用map，我把主流先key之后connect，然后写入keyedCoProcessFunction,
+报错:keyedCoProcessFunction必须是2个keyed流。
+这个可以理解，2个keyed流connect后，会按key关联，应该是2个流相同key的，才会共用一个mapstate
+```
+
+
 
 
 
@@ -226,11 +142,13 @@ hive放1 和mysql放一起，方便读取元数据
 
 
 
-# 实时数仓出现背景
+
+
+# 实时数仓
 
 一些业务对实时性数据要求比较高,而离线数据仓库满足不了
 
-**出现背景**
+### **出现背景**
 
 ```sql
 #实时广告投放：
@@ -250,13 +168,15 @@ hive放1 和mysql放一起，方便读取元数据
 
 
 
-
-
-# 实时数仓和离线数仓区别
+### 实时离线数仓区别
 
 1  离线数仓的mysql数据是每天凌晨通过sqoop用sql来过滤的。实时的是通过maxwell => kafka => hdfs => hive load
 
 ​     因为实时数仓，maxwell会把每个数据的变动也传递到hdfs上，也就是能把每条数据的历史状态也能获取到，这个不错。
+
+上面思想错误，上面说的是离在线混搭，实时数仓是为了秒级毫秒级响应弄的。
+
+
 
 
 
@@ -342,11 +262,7 @@ dophin调度器
 
 
 
-#### ods(有问题待解决)
-
-使用场景：新增一条数据,读取并加工处理，再让别人读取，用kafka存
-
-问题?????感觉变更的表数据，用kafka存会出现重复数据
+#### ods
 
 #### dim
 

@@ -1,4 +1,4 @@
-# idea问题待解决
+# 问题待解决
 
 #### lombok一直编译失败
 
@@ -6,57 +6,44 @@ java: 程序包lombok不存在.
 
 flink-1.17用不了，新建的就能用lombok不知道怎么回事
 
-
-
-
-
-
-
-# idea问题已解决
+# 问题已解决(待回顾)
 
 #### 编译时找不到主类
-
 因为.class文件必须要和java文件在一个项目下，才能读取到。所以.class编译目录必须和项目目录相同
-
 project stucture => project 把output目录 更改为项目全路径\out =>moudle模块 选择inherit project 会自动读取项目路径
 
-#### 导入的项目找不到主类
 
- git_flink_learn项目，不小心从idea最近打开目录删除了。然后重新open导入idea中的时候，原来能执行的代码，显示找不到本地自定义类的包。因为第一次因为导入目录错了，应该导入的是里面的目录。第二次显示加载不到dao里的类，target目录 clean之后再执行就行了
-
-#### 编译器error
-
-Compilation failed: internal java compiler error，一般都是github导入项目，导致的需要自己更改
-
-settings=>complier=>java complier版本和project structure不同
-
-#### debug找到断点上一行
-
-当我们打一个断点时,快进到断点，左侧然后有一个方法调用情况，鼠标自己往下找
-
-#### 手动导入jar包不生效
-
-学习源码的时候，project structure   =>library添加库的时候把source源码包添加进去了，不生效
-
-因为source包是java文件，导入的必须是.class字节码文件才能识别
 
 #### 无法运行:Commline is too long
 
 edit configuration => 在 include provided下面2行=》shorten command line 选 classpath file就行 
 
+
+
+# 问题已记住(备份)
+
+
+
+```sql
 #### 如何修改源码
-
 idea可以下载source的jar包，能看到源码注释,不过是临时解析的,不能修改，因为是个jar包格式。
+想修改源码做注释,要从官网或者github上下载源码,比如之前的hive源码包，还有github上的源码。下载到本地，才能修改。
 
-想修改源码做注释,要从官网或者github上下载源码,比如之前的hive源码包，还有github上的源码。
-
-下载到本地，才能修改。
+####手动导入jar包不生效
+学习源码的时候，project structure   =>library添加库的时候把source源码包添加进去了，不生效
+因为source包是java文件，导入的必须是.class字节码文件,idea才能加载到类
 
 #### idea设置了global不生效
-
 将guava为global，并且也导入项目了，不过代码里还是找不到类别。
-
 因为导入的guava包选的是source.jar选错了这里没有.class文件。source.jar一般比.class要小
+
+#### 编译器error
+Compilation failed: internal java compiler error，一般都是github导入项目，导致的需要自己更改
+settings=>complier=>java complier版本和project structure不同
+
+#### debug找到断点上一行
+当我们打一个断点时,快进到断点，左侧然后有一个方法调用情况，鼠标自己往下找
+```
 
 
 

@@ -6,10 +6,6 @@ a3包的广播
 
 # 问题待解决
 
-### keyed流没找到list
-
-在keyedStream里没找到状态
-
 ### FlinkKafkaConsumer过时
 
 实现sourceFunction的kafka有3个,FlinkKafkaShuffleConsumer，FlinkKafkaConsumer，FlinkKafkaConsumerBase
@@ -17,6 +13,36 @@ a3包的广播
 FlinkKafkaConsumer过时了
 
 FlinkKafkaShuffleConsumer是他的继承类，不过没有public构造器,也没找到buider不知道怎么办
+
+### 想要的TTL
+
+#TTL(对上面所有的state做控制用的)
+这个是对keyed流中,若某个key的状态很久没有使用了，定期会删除。
+但是我想要的情况，是ListState中某些数据过期后,把list中过期数据清除，然后新建一个更小的list替换当前这个很大内存的list
+
+
+
+### 广播状态和广播流
+
+这2个区分一下
+
+### 不keyby想用mapstate
+
+不keyby想用state会报错
+
+
+
+### reduce/Aggregate的state用途
+
+目前感觉valueState + 逻辑可以代替这2个
+
+
+
+### checkpoint的2种barrier区别
+
+这个没搞懂
+
+
 
 # 问题已解决
 
@@ -33,7 +59,46 @@ public class KafkaSink  implements StatefulSink,TwoPhaseCommittingSink{}
 
 
 
-# 概念描述
+# 代码案例
+
+### 端到端精准一次
+
+如果是hdfs，那么用预写日志完成事务，还要结合幂等操作等，自己一个预习日志是不能完成精准事务的。
+
+### kafka如何实现精准一次
+
+写入kafka时
+
+
+
+# DataStream
+
+### 状态编程(有问题待解决)
+
+```sql
+目前状态分为2类，keyed状态，非keyed状态，两种注册方式不一样。也可以自定义状态自己管理
+
+#keyed流状态
+keyed的流注册状态，每个key单独享有一个状态。
+目前状态有：value,list,map,Aggregating，Reducing
+
+#TTL(对上面所有的state做控制用的)
+这个是对keyed流中,若某个key的状态很久没有使用了，定期会删除。
+但是我想要的情况，是ListState中某些数据过期后,把list中过期数据清除，然后新建一个更小的list替换当前这个很大内存的list
+
+
+#待研究
+不过现在不知道vlue和aggregating和reducing区别,感觉这2个用value也能做
+
+
+#非keyed流状态
+非keyby的流，注册的状态，共享一个
+目前状态有:list,UnionList,broadcast
+
+#注意区分广播状态和广播流
+```
+
+
 
 ### statebackend
 
@@ -108,14 +173,28 @@ exactly-once能保证事件只被消费一次,at-least-once可能出现重复消
 
 
 
-# 端到端精准一次
-
-如果是hdfs，那么用预写日志完成事务，还要结合幂等操作等，自己一个预习日志是不能完成精准事务的。
 
 
 
-# kafka如何实现精准一次
 
-写入kafka时
+# TableAPI
 
-# 
+### 查看执行计划
+
+```
+是的，Flink 提供了 `EXPLAIN` 命令，它可以用来查看 Table API 或 SQL 查询的逻辑和物理执行计划。执行计划为你提供了查询的详细信息，包括查询将如何被转化为底层的 DataStream API 操作。
+
+要使用 `EXPLAIN` 命令，你可以在 TableEnvironment 上调用 `explain` 方法。这个方法可以接受一个 Table 对象或者一个 String 类型的 SQL 查询，并返回一个描述执行计划的字符串。
+
+String explanation = tableEnv.explainSql("SELECT * FROM YourTable WHERE ...");
+System.out.println(explanation);
+
+
+执行计划通常包含以下几个部分：
+1. **Abstract Syntax Tree (AST)**：这是 SQL 查询或 Table API 调用的抽象语法树表示，反映了用户的原始意图。
+2. **Optimized Logical Plan**：这是优化器处理 AST 后的结果，它会应用各种优化规则来改进查询的执行效率。
+3. **Physical Plan**：这是逻辑计划的物理实现，它包括了具体的算子和它们的配置，比如过滤、聚合、连接等。
+4. **Execution Plan**：这是最终的执行计划，它会被提交到 Flink 集群上执行。这部分包括了任务的并行度、数据的分区策略等具体的运行时信息。
+通过查看这些执行计划，你可以更好地理解 Flink 是如何处理你的查询的，以及可能在哪些地方进行了优化。这对于调试查询性能问题非常有用。
+```
+

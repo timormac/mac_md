@@ -266,15 +266,11 @@ env.enableCheckpointing(60000); // 每60秒执行一次检查点
 
 # 问题待解决
 
-### flink源码没找到
+### 定时器重复注册
 
-map方法传的函数到底在哪里被调用了。
+在KeyedProcessFunction中可以住车定时器。processElement函数中每次处理一条数据，这样重复注册定时器，不会导致定时任务重复调用吗？
 
-keyby返回的keyedStream，记录key的东西我没找到，正常应该有一个属性的，要么就是在下游的sum等算子里才存key。
-
-这里的keyby流只是形式话
-
-
+答案是不会，应为Flink内部使用的HeapPriorityQueueSet来存储定时器，一个注册请求到来时，其add()方法会检查是否已经存在，如果存在则不会加入。并且是根据key来注册的。如果重复注册并且更改触发时间的话，需要自己去测一下
 
 
 
@@ -296,39 +292,6 @@ Deployment took more than 120 seconds. Please check if the requested resources a
 ### log4j日志不打印
 
 代码里指定了log4j打印目录，在idea能自己创建目录，上传到集群，log日志无法生成
-
-
-
-### flink任务每次临时下载jar包
-
-fink任务每次临时下载jar包，那么如果我执行多个任务，下载多次吗？
-
-还是说第一次下载jar包后，存在本地某个目录，以后先去目录找，再决定是否下载
-
-### hdfs的项目包无法执行
-
-下面2个都是yarn-application模式，不过本地的jar能正常执行，但是hdfs上的jar无法正常执行，报错如下：
-
- No ClusterClientFactory found. If you were targeting a Yarn cluster, please make sure to export the HADOOP_CLASSPATH  environment variable or have hadoop in your classpath.
-
-​	个人理解就是如果通过hdfs 必须在hdfs上有jar包并且必须参数指定lib才行，或者说是没有连接上project1:8020就是没找到hdfs所在的执行环境
-
-```shell
-./bin/flink run-application -t yarn-application -c com.timor.flink.learning.demo.A3_WordCountStreamSocket  hdfs://project1:8020/flink-jars/git_flink_learning_1.17-1.0-SNAPSHOT.jar
-
-
-./bin/flink run-application -t yarn-application -c com.timor.flink.learning.demo.A3_WordCountStreamSocket   ./git_flink_learning_1.17-1.0-SNAPSHOT.jar
-```
-
-
-
-2任务槽设置中，是在flink配置文件设定的，但是flink on yarn，其他子节点都没安装flink，设置插槽数量有什么用？？
-
-### batch应用场景
-
-什么时候用batch批，什么时候用stream流模式
-
-flink的分区策略有什么用，大部分flink是消费消息队列kafka，而kafka的API应该是有自己的数据发送模式，flink设置了应该没用
 
 
 
@@ -358,25 +321,16 @@ WatermarkStrategy<WaterSensor> watermarkStrategy = WatermarkStrategy
    //源码显示的方法返回值是WatermarkStrategy，不过new BoundedOutOfOrdernessWatermarks<>(maxOutOfOrderness)，点进去并没有实现WatermarkStrategy接口，看不懂了，为什么new BoundedOutOfOrdernessWatermarks能用WatermarkStrategy接
    
    BoundedOutOfOrdernessWatermarks类,实现了WatermarkGenerator接口，并且这个接口是个初始接口，和watermarkStrategy没关系
-  class BoundedOutOfOrdernessWatermarks<T> implements WatermarkGenerator<T>
-    
-      
-      
+  class BoundedOutOfOrdernessWatermarks<T> implements WatermarkGenerator<T>    
 ```
 
-### 传入方法在哪被调用
 
-看一些源码的时候，有时候需要传入一个借口，实现某个方法，比如flink的自定义map方法，有个问题，就是我现在想知道，这个传入的map方法，到底是谁在哪一步开始调用的，现在一直没头绪
 
 ### watermark传递机制
 
 flink中waterMark是怎么传递的，比如先map 然后 process，不同算子之间，是根据流过的数据来更新watermark吗
 
-### 定时器重复注册
 
-keyBy后的流，同一个key，注册多次定时器，会发生什么因为topn代码中，流的process注册了定时器，并且同一个key重复注册了，
-
-不会出问题吗？
 
 ### ArrayIndexOutOfBoundsException
 
@@ -394,11 +348,7 @@ A2_TopnWindowAll有个bug，就是总是报错.ArrayIndexOutOfBoundsException: -
 
 
 
-### checkpoint未整理问题
-
-1  为什么cep设置为hdfs路径时，pom文件要导入hadoop依赖，代码里没有用haddoop的包啊
-
-3  checkpoint不是应该和status状态编程连用吗？为什么demo里可以单独用
+### checkpoint中barrie
 
 2	cep会将数据携带一个barrier，让各个算子记录当前状态，不过没有那么简单
 
@@ -422,63 +372,6 @@ A2_TopnWindowAll有个bug，就是总是报错.ArrayIndexOutOfBoundsException: -
 
 
 # 问题已解决
-
-### 三流join怎么实现
-
-看了下源码,connect流只能存2个流数据，当多流join，只能按照hql的解析方式，拆分为多个join任务，先关联一个处理后再关联下一个。你也可以自定义个一个connect流，然后自己生成多流join逻辑。
-
-### 水位线不推进
-
-1  事件水位线推进，自己的代码有bug：
-
-```java
-/*bug原因找到了,因为没设置并行度导致默认是8个线程，而水位线必须8个流里的数据都有数据并且事件时间更新到10s时才触发process执行
-*因为之前输入的key都是a,b导致其他线程没数据，导致其他线程水位线时间不更新，所以尽管a,1000但是还是不触发process窗口关闭
-* 后面设置并行度为2,就好了，不过必须a,b 2个事件时间都超过10
-          * 为了避免这种情况可以设置空闲时间等待.withIdleness(Duration.ofSeconds(10))
-          * //空闲等待10s，即当10s内其他分区没有数据更新事件时间是，等10s，按最大的时间时间同步到其他没数据的分区
-* */
-```
-
-### 定时器重复注册
-
-在KeyedProcessFunction中可以住车定时器。processElement函数中每次处理一条数据，这样重复注册定时器，不会导致定时任务重复调用吗？
-
-答案是不会，应为Flink内部使用的HeapPriorityQueueSet来存储定时器，一个注册请求到来时，其add()方法会检查是否已经存在，如果存在则不会加入。并且是根据key来注册的。如果重复注册并且更改触发时间的话，需要自己去测一下
-
-### 找不到flink-kafka类
-
-flink本身并不包含这些拓展文件，虽然我们代码里有kafkasource，但是是pom自己导入的，不是flink自带的，所以需要我们自己打包带的jar包，或者上传服务器
-
-pom里配置了这个
-
-<!--  连接kafka流 -->
-<dependency>
-    <groupId>org.apache.flink</groupId>
-    <artifactId>flink-connector-kafka</artifactId>
-    <version>${flink.version}</version>
-    <scope>provided</scope>
-</dependency>
-
-
-
-
-
-
-
-
-
-### yarn-session模式起不来任务
-
-```sql
-#slut为0 
-看到flink UI界面，显示slut 为0 ，看到各集群free -h  剩余没有大于1.5G的内存。看了下配置文件,需要task的内存默认是1.7G,所以可以插槽为0 
-#application任务被杀
-启动任务后显示任务被yarn杀掉
-原因： 如果 Flink 或者用户代码分配超过容器大小的非托管的堆外（本地）内存，部署环境可能会杀掉超用内存的容器，造成作业执行失败。
-#更改配置文件后连yarn-sesion都起不来
-为了资源够slut,更改flink配置文件，发现起不来了。后面查阅发现，好像比如jobmanager和taskmanager有一定内存比例的，而且分给某些线程的内存要在固定60m-256m范围之间，因为只改了jobmanager和taskmanager的内存配置，所以起不来了。
-```
 
 
 
@@ -529,6 +422,39 @@ NoSuchMethodError: com.google.common.base.Preconditions.checkArgument
 
 
 
+
+# 问题已理解(备份)
+
+
+
+```sql
+### 三流join怎么实现
+看了下源码,connect流只能存2个流数据，当多流join，只能按照hql的解析方式，拆分为多个join任务，先关联一个处理后再关联下一个。你也可以自定义个一个connect流，然后自己生成多流join逻辑。
+
+### 水位线不推进
+没设置并行度导致默认是8个线程，而水位线必须8个流里的数据都有数据并且事件时间更新到10s时才触发process执行
+因为之前输入的key都是a,b导致其他线程没数据，导致其他线程水位线时间不更新，所以尽管a,1000但是还是不触发process窗口关闭
+* 后面设置并行度为2,就好了，不过必须a,b 2个事件时间都超过10
+* 为了避免这种情况可以设置空闲时间等待.withIdleness(Duration.ofSeconds(10))
+* //空闲等待10s，即当10s内其他分区没有数据更新事件时间是，等10s，按最大的时间时间同步到其他没数据的分区
+
+#checkpoint单独使用
+即使没注册状态,checkpoint也可以用，比如记录kafka的消费,有checkpoint提交偏移量，可以保证不丢。
+checkpoint也能结合下游事务，比如两阶段提交，flink会自动结合checkpoint做事务。
+
+
+### yarn-session模式起不来任务
+"application任务被杀"
+启动任务后显示任务被yarn杀掉
+原因： 如果 Flink 或者用户代码分配超过容器大小的非托管的堆外（本地）内存，部署环境可能会杀掉超用内存的容器，造成作业执行失败。
+"更改配置文件后连yarn-sesion都起不来"
+为了资源够slut,更改flink配置文件，发现起不来了。后面查阅发现，好像比如jobmanager和taskmanager有一定内存比例的，而且分给某些线程的内存要在固定60m-256m范围之间，因为只改了jobmanager和taskmanager的内存配置，所以起不来了。
+
+
+
+
+
+```
 
 
 

@@ -281,6 +281,21 @@ arr.stream().map( String::length );
 
 ```
 
+### 合理使用|| &&
+
+```java
+
+需求：若v是null ,或者c.value()是null,则返回""
+正常来说，应该先判断v是否为空，然后在if里再调用c.value(),不然会报空指针
+C1 v = null;
+//写法1
+if( v==null || v.value() == null ){  return ""; }
+//写法2
+if( v.value() == null || v==null ){  return ""; }
+
+写法1和2是不一样的，1能通过，2会报错，这就是双||
+```
+
 
 
 # java习惯养成

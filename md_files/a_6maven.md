@@ -16,78 +16,37 @@ maven打包的项目，在META-INF的目录下是有pom文件的。
 
 但是不知道怎么通过jar包下载依赖
 
-# 问题已解决
+# 问题已解决(需回顾)
 
-#### 运行报错找不到类
+#### 打包fat-jar
 
-flink实时项目时，运行代码找不到类,不过自己手动能找到这个类，因为pom配置的是provided，运行时不会把依赖带进去
-
-两种解决方式：1 把provided去掉
-
-2 点进run=》点击edit configrations=>edit template=>applictions=>modify options=>add denpendency with provided
-
-这个模版配置一次，以后就不用配置了.windows上的操作是run=>edit configrations=>application选中类名=> configuration=>勾选provided
-
-```
-ClassNotFoundException: org.apache.flink.api.common.serialization.DeserializationSchema
-```
-
-#### 打包报错1.5不支持静态接口
-
-maven打包时显示，1.5语法不支持静态接口的调用但是idea里面settings和project structure都改成8了，还是不行
-
-最后是pom文件 添加制定maven编译器解决的。不过好像把java compiler里的版本改成1.8这种方法也行
-
-```
-<properties>
-    <maven.compiler.source>1.8</maven.compiler.source>
-    <maven.compiler.target>1.8</maven.compiler.target>
-</properties>
-```
-
-#### 打包项目含所有依赖
-
-pom文件加入这个，这个会把所有依赖都打包进去
+pom文件加入这个，这个会把所有依赖非provided和test包打包进去
 
 ```xml
 <build>
-  <plugins>
-    <plugin>
-      <groupId>org.apache.maven.plugins</groupId>
-      <artifactId>maven-assembly-plugin</artifactId>
-      <configuration>
-        <descriptorRefs>
-          <!--给jar包起的别名-->
-          <descriptorRef>jar-with-dependencies</descriptorRef>
-        </descriptorRefs>
-        <archive>
-          <manifest>
-            <addClasspath>true</addClasspath>
-            <classpathPrefix>lib/</classpathPrefix>
-            <!--添加项目中主类-->
-            <mainClass>com.sdt.intf.client.tools.DealConnectFile</mainClass>
-          </manifest>
-        </archive>
-      </configuration>
-      <executions>
-        <execution>
-          <id>make-assembly</id>
-          <phase>package</phase>
-          <goals>
-            <goal>single</goal>
-          </goals>
-        </execution>
-      </executions>
-    </plugin>
-
-  </plugins>
+    <plugins>
+        <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-shade-plugin</artifactId>
+            <version>3.2.4</version>
+            <executions>
+                <execution>
+                    <phase>package</phase>
+                    <goals>
+                        <goal>shade</goal>
+                    </goals>
+                    <configuration>
+                        <createDependencyReducedPom>false</createDependencyReducedPom>
+                    </configuration>
+                </execution>
+            </executions>
+        </plugin>
+    </plugins>
 </build>
 
 ```
 
-#### idea源码下载失败
 
-pom导入jar依赖没问题，不过点进去之后，用idea 下载soure源码一直失败，在目录下的terminal执行 mvn dependency:sources
 
 #### pom文件导入卡在sync
 
@@ -102,23 +61,38 @@ pom导入jar依赖没问题，不过点进去之后，用idea 下载soure源码�
 在阿里云仓库找不到这个模版，建maven项目的时候指定模版指定错了。
 ```
 
-#### spark项目导入依赖报错
 
-Could not find artifact org.pentaho:pentaho-aggdesigner-algorithm:jar:5.1.5-jhyde
 
-自己maven配置文件的阿里云镜像源找不到这个依赖
 
-windows当初能下载是用了默认的maven的conf.xml，没有用更改的阿里云的源
 
-在mac上更改配置文件为maven自带的就行，仓库还用自己的仓库存jar包
+# 问题已理解(备份)
+
+```sql
+#### 运行报错找不到类
+flink实时项目时，运行代码找不到类,不过自己手动能找到这个类，因为pom配置的是provided，运行时不会把依赖带进去
+两种解决方式：1 把provided去掉
+2 点进run=》点击edit configrations=>edit template=>applictions=>modify options=>add denpendency with provided
+这个模版配置一次，以后就不用配置了.windows上的操作是run=>edit configrations=>application选中类名=> configuration=>勾选provided
+
+#### 打包报错1.5不支持静态接口
+maven打包时显示，1.5语法不支持静态接口的调用,project structure都改成8了，还是不行
+最后是pom文件 添加制定maven编译器解决的。或者把java compiler里的版本改成1.8这种方法也行
+<properties>
+    <maven.compiler.source>1.8</maven.compiler.source>
+    <maven.compiler.target>1.8</maven.compiler.target>
+</properties>
 
 #### 无法找到plugins
-
 自己配置的阿里云源总是缺东西，以后默认用maven的conf配置文件
-
 maven的jar管理和插件管理是2个不同的仓库，当初只更改配置了一个源，插件源没换。
 
+#### idea源码下载失败
+pom导入jar依赖没问题，不过点进去之后，用idea 下载soure源码一直失败，在目录下的terminal执行 mvn dependency:sources
 
+#idea的maven3
+会使用自己的settings.xml,虽然手动指定了配置文件和仓库，不过好像不使用
+
+```
 
 
 
@@ -747,14 +721,19 @@ test
 //将字符串转为json
 String s="{\"address\":\"北京市\",\"age\":20,\"id\":1,\"name\":\"张三\"}";
 JSONObject jsonObject = JSON.parseObject(s);
-String address = jsonObject.getString("address");
 Integer age = jsonObject.getInteger("age");
 Set<String> columns = jsonObject.keySet();
 Collection<Object> values = jsonObject.values();
 
+//json中插入数据
+js.put("name","jack");
 
 //将对象转为json
 String jsonString = JSON.toJSONString(student);
+
+ // 将json字符串 转为对象
+String objectString="{\"address\":\"北京市\",\"age\":20,\"email\":\"zs@sina.com\",\"id\":1,\"name\":\"张三\"}";
+Student student = JSON.parseObject(objectString, Student.class);
 
 //将对象数组，转为json数组  
 ArrayList<Student> students = new ArrayList<>(
@@ -764,6 +743,9 @@ String s = JSON.toJSONString(students);
  HashMap<String, String> map = new HashMap<>();
  map.put("name","张三");
  String s1 = JSON.toJSONString(map);
+
+ //json转map,不过类型是Object
+ Map<String,Object> map=js.getInnerMap()
   
  // 将json字符串 转为对象
 String objectString="{\"address\":\"北京市\",\"age\":20,\"email\":\"zs@sina.com\",\"id\":1,\"name\":\"张三\"}";

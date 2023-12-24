@@ -597,58 +597,81 @@ lines terminated by '\n';					-- 行分隔符
 
 #### stored储存方式
 
-```
-stored as  存储格式 textFile、SequenceFile、RCfile、ORCFile，parquet  这几种
+```sql
+#存储格式 
+textFile、SequenceFile、RCfile、ORCFile，parquet  
+#压缩方式
+TBLPROPERTIES ( 
+  'hive.exec.compress.output'='true', 
+  'io.compression.codecs'='com.hadoop.compression.lzo.LzopCodec' 
+);
+
+#完整写法
+STORED AS parquet
+LOCATION '/warehouse/gmall/dwd/dwd_comment_info/'
+TBLPROPERTIES ( 
+  'hive.exec.compress.output'='true', 
+  'io.compression.codecs'='com.hadoop.compression.lzo.LzopCodec' 
+);
 
 textFile：
-        默认的文件格式，行存储。
-
+        默认的文件格式，行存储
         优点：最简单的数据格式，便于和其它工具（pig，grep，awk）共享数据，便于查看和编辑；加载快；
-
         缺点：存储空间占用较大，I/O性能低；不可对数据进行切割、合并，不能进行并行操作；
-
         适用于小型查询，测试操作等。
 
 sequqnceFile：
         键值对形式存储的二进制文本格式，行存储。
-
         优点：可压缩、可分割。优化I/O性能；可并行操作；
-
         缺点：存储空间占用最大，只局限于hadoop生态使用；
-
         适用于小数据，大部分都是列查询的操作。
 
 RCFile：
         行列式存储。先将数据按行分块，每一个块数据转换成一个Record对象，避免读取一条数据需要读取多个block；然后块数据按列存储。
-
         优点：可压缩，高效的列存储，查询速度较快；
-
         缺点：加载时性能消耗较大，全量数据读取时性能较低。
 
 ORCFile：
         优化后的RCFile，优缺点与RCFile类似，查询效率最高。
-
         适用于hive中、大型的存储和查询。
 
 Parquet：
         列存储。
-
         优点：更高效的压缩和编码；不与任何数据处理技术绑定，可用于多种数据处理框架。
-
         缺点：不支持update，insert，delete，ACID
-
         适用于字段非常多，无更新，只读取部分列数据。
 
-总结：
 
-如果一个表select * 比较多那么就用行存，比如商品表。 如果是只取某个字段，并且grouoby count多，就用列存。
-
-表的字段个数不多时文件按块进行压缩，行存储比较高效；
-
-表的字段个数成百上千时，且只需要个别字段的查询时，列存储可较大提高效率；
-
-数据仓库一次写入，多次读取，orc格式比较有优势。
 ```
+
+#### input/output/压缩格式
+
+```sql
+#之前一直错误理解了
+inputformat是读取格式
+outputformat是输出格式,也是存在hdfs上的格式
+
+#input和output是配套的，并且兼容的
+input 为lzo
+output 为text
+含义就是读取本表数据用lzo解析，存本表数据用text，是不是很奇怪。input必须是能兼容的。
+也就是当本地的表用text去存时，当lzo去解析，是可以解析input的
+
+INPUTFORMAT 'com.hadoop.mapred.DeprecatedLzoTextInputFormat'
+OUTPUTFORMAT 'org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat'
+
+#文档的建表语句一直理解错误了
+当时sqoop导mysql数据时,采用了lzo的压缩方式, ODS层load之后还是lzo格式,
+所以input格式为lzo,因为ods层表只做load，不做插入处理。所以output为text无影响
+
+#采用lzo压缩
+从ods查询数据写入dwd，如果想采用压缩lzo格式，要设置tblproperties,不写input和output默认都是lzo
+TBLPROPERTIES ( 'hive.exec.compress.output'='true', 'io.compression.codecs'='com.hadoop.compression.lzo.LzopCodec' );
+```
+
+
+
+
 
 #### ACID事务表
 
@@ -1240,23 +1263,13 @@ select "a1",explode(array) from the_nba_championship;
 
 # hql案例
 
-#### 部门前3（不开窗）
 
-不用开窗，求每个部门前2
-
-```
-部门id   用户id   工资
-11			1        100
-11	    2        120
-11      3        130
-```
 
 #### 连续3天问题
 
 ```sql
 
 #思路1：等差数列
-
 按日期排序,排名是每行增加1，连续日期也是每天+1, 日期 减排名得到一个日期值值，值相同的就是连续的，
 按日期值聚合，出现4次，表示从这个日期开始，连续4天都登陆了
 实际就是弄个连续表，当日期连续时，和等行连续表的差值为0，当某一天跳动3后，后续连续日期和等差表差值为3。
@@ -1274,7 +1287,7 @@ select "a1",explode(array) from the_nba_championship;
 
 ```
 
-#### 部门最早创建的人(不开窗取一条)
+#### 部门最早的人(不开窗取一条)
 
 ```sql
 select 
@@ -1285,9 +1298,7 @@ group by subject
 
 
 
-
-
-#### 递归查找部门所属
+#### 递归查找部门所属(不支持)
 
 hive不支持递归查询，所以chatgpt给的答案是错的
 
@@ -1300,6 +1311,17 @@ join  tmp on t1.id = tmp.superid
 )select * from cte;
 
 报错SemanticException Recursive cte cte detected (cycle: cte -> cte).
+```
+
+#### 部门前3不开窗(待定)
+
+不用开窗，求每个部门前2
+
+```
+部门id   用户id   工资
+11			1        100
+11	    2        120
+11      3        130
 ```
 
 

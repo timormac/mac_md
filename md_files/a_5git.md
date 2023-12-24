@@ -14,27 +14,13 @@
 
 
 
-# 问题记录
-
-#### 提交落后于远程分支
-
-[! [rejected\] master -> master (non-fast-forward)      具体报错
-
-更新被拒绝，因为您当前分支的最新提交落后于其对应的远程分支
-
-原因: github创建库的时候，添加了read.md文件，这样github仓库就有了一次commit
-
-​		 本地用idea创建项目后，有commit提交。当push时，导致2边的head不一致
-
-解决方法:删除github库创建一个没有commit提交记录的库
+# 问题已解决(待回顾)
 
 
 
-#### 连接不上github服务器
 
-http拉取会失败,ssh没有问题
 
-github代码突然不能push 也不能clone了，因为改成了http
+
 
 #### 无上游分支
 
@@ -44,28 +30,15 @@ github代码突然不能push 也不能clone了，因为改成了http
 
  执行 git push --set-upstream 远仓别名 master
 
+
+
 #### 代码pull失败代码冲突
 
 最好用idea去pull，能直接看到哪几个文件冲突，可以选择合并/选择他/选择你的
 
 警告:your local changes will be overwritten by merge. commit, statsh,or revert them to proceed
 
-```sql
-这句话是Git在执行合并操作时给出的警告信息，意思是你的本地更改因为没进行commit提交过，直接拉取会被覆盖。
 
-处理这个警告的方法取决于你希望如何处理你的本地更改。以下是几种可能的处理方式：
-
-#先git add,commit再pull，这样自己和云端代码都有
-提交（commit）：如果你希望保留你的本地更改并将其合并到最新的代码中，你可以先使用git add命令将更改添加到暂存区，然后使用git commit命令提交更改。这样你的更改将被保存并与合并后的代码一起提交。
-
-#先暂存再pull，之后pop stash,注意这时候你的更改没有git add过,和第一种方法就区别在这里了
-暂存（stash）：如果你希望在合并之前暂时保存你的本地更改，可以使用git stash命令。这将把你的更改保存在一个临时存储区，然后你可以执行合并操作。合并完成后，你可以使用git stash pop命令将你的更改重新应用到合并后的代码中。
-
-#丢弃自己更改
-还原（revert）：如果你希望完全取消你的本地更改并将代码恢复到合并之前的状态，可以使用git revert命令。这将创建一个新的提交，撤销你的更改，并将代码恢复到合并之前的状态。
-
-具体选择哪种处理方式取决于你的需求和代码库的状态。在进行任何操作之前，建议你先使用git status命令查看当前的更改状态，并确保你理解你的更改将如何影响合并操作。
-```
 
 
 
@@ -81,17 +54,34 @@ idea操作方法:
 
 
 
+
+
+
+
+# 问题已理解(备份)
+
+```sql
 ####  fork库不更新
-
 当原库更新的时，fork的仓库不会更新。创建2个remote远程仓库，一个是开源仓库，一个是fork库。
-
 本地写完代码,先pull开源仓库源码,再推送到fork库
 
 #### 创建git管理失败
-
 git管理的目录不能下的目录，不能再有.git文件，不然会报错。
-
 场景是:所有的java项目都在mac_project目录下，想管理mac_project目录，将所有的项目上传github，但是其中有的项目通过idea创建了git管理，所以最mac_project的git管理就有问题了
+
+#### 连接不上github服务器
+http拉取会失败,ssh没有问题
+github代码突然不能push 也不能clone了，因为改成了http
+
+#### 提交落后于远程分支
+[! [rejected\] master -> master (non-fast-forward)      具体报错
+更新被拒绝，因为您当前分支的最新提交落后于其对应的远程分支
+原因: github创建库的时候，添加了read.md文件，这样github仓库就有了一次commit
+本地用idea创建项目后，有commit提交。当push时，导致2边的head不一致
+解决方法:删除github库创建一个没有commit提交记录的库
+```
+
+
 
 # idea相关git操作
 
