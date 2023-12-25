@@ -852,8 +852,6 @@ hdfs://project1:8020/a.jar
 
 
 
-
-
 ### 单作业模式(基本不用)
 
 ```sql
@@ -870,33 +868,6 @@ bin/flink run -d -t yarn-per-job -c WordCount a.jar
 
 
 # flink中概念
-
-### taskmanager
-
-是一个jvm进程，每个taskmanager，都需要启动个yarn的container
-
-slot时taskmanager的线程，taskmanager的jvm可以有多个线程slot
-
-### slot
-
-3个map算子到key by 到1个keyed算子，一共4个任务:3+1    3个slot就可以执行
-
-一个slot可以执行多个算子，既可以在map阶段算子，也可以处理reduce阶段的算子。
-
-如果某个算子工作量大，可以不设置slot共享，这样那个算子会单独占用一个slot。
-
-```
-如果没有其他算子也设置为1，那么就为独享
-map(s->s).slotSharingGroup("1") 
-```
-
-算子最大并行度 = task数*task的slot数
-
-
-
-
-
-
 
 ### 状态一致性
 
@@ -1030,54 +1001,9 @@ env.getCheckpointConfig().setCheckpointStorage("hdfs:///flink/checkpoints");
 
 # —————FlinkAPI———————
 
-# flink连接器
 
-#### flink-kafka
 
-如何手动提交offset
 
-~~~sql
-
-1:通过设置`setCommitOffsetsOnCheckpoints`标志为`false`，你可以禁用自动offset提交，这意味着Flink不会在checkpoint时自动提交offset。
-2 设置 ENABLE_AUTO_COMMIT_CONFIG为"false"，这样kafka偏移量不会自动提交
-
-import java.util.Properties;
-
-public class KafkaExample {
-    public static void main(String[] args) throws Exception {
-        StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
-
-        Properties properties = new Properties();
-        properties.setProperty("bootstrap.servers", "localhost:9092");
-        properties.setProperty("group.id", "test");
-        // 设置为手动提交offset
-        properties.setProperty(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "false");
-
-        // 创建Flink Kafka Consumer
-        FlinkKafkaConsumer<String> flinkKafkaConsumer = new FlinkKafkaConsumer<>(
-                "topic_name",
-                new SimpleStringSchema(),
-                properties
-        );
-
-        // 禁用自动在checkpoint时提交offset
-        flinkKafkaConsumer.setCommitOffsetsOnCheckpoints(false);
-
-        // 添加source到你的Flink job
-        env.addSource(flinkKafkaConsumer).print();
-
-        // 执行Flink job
-        env.execute("Flink Kafka Manual Offset Commit Example");
-    }
-}
-```
-
-在这个例子中，我们没有显示如何手动提交offset，因为这通常涉及到更复杂的逻辑，比如在你的Flink作业处理逻辑中跟踪已经处理的记录，并在确认处理完成后提交offset。
-
-要手动提交offset，你可能需要使用`KafkaConsumer`类中的`commitSync`或`commitAsync`方法。但是，这通常不是在Flink中推荐的做法，因为它可能与Flink的容错机制冲突。通常情况下，你会希望Flink在执行checkpoint时自动管理offset，以确保exactly-once语义。
-
-如果你确实需要在Flink中手动管理offset，你可能需要深入了解Flink的状态管理和checkpoint机制，并确保手动提交的offset与Flink的checkpoint对齐，以避免数据丢失或重复处理。
-~~~
 
 
 
@@ -1085,17 +1011,7 @@ public class KafkaExample {
 
 # 环境与算子
 
-### flink如何确定task数量
 
-当你的并行度为9时，并且你的slot参数参数为2，那么会申请5个task。
-
-并行度/slot数。
-
-注意当禁用算子链，1个task 2个slot，可执行2个算子，slot是线程，虽然2个slot都在一个jvm执行，
-
-但是2个算子还是要序列化和反序列化，通过task的网络栈来传数据。
-
-算子链是很有用的。
 
 ### changelog后端和checkpoint区别
 
@@ -1160,71 +1076,7 @@ taskmanager.numberOfTaskSlots: 8
 
 
 
-# flink各种流（待补充完整）
-
-普通流    map ,fliter,process等获得的
-
-窗口流   window()方法获取的
-
-按键分区流
-
-广播流
-
-
-
-stream流的2个方法process,window
-
-winod
-
-process的实现类倒是没有什么，就一个processfuction
-
-滚动窗口，滑动窗口都是基于processWindowFunction的实现类。
-
-
-
-### processFunction
-
-### processWindowFunction
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 # DataStream API核心
-
-dataset写法是一个批处理方式，已经过时了。1.12以后已经用DataStream的API通过set batch参数就能用一个代码，同时可实现流处理和批处理
-
-#### 自定义可序列化
-
-Flink对POJO类型的要求如下：
-
-l 类是公有（public）的
-
-l 有一个无参的构造方法
-
-l 所有属性都是公有（public）的
-
-l 所有属性的类型都是可以序列化的
-
-并且实现了searilized接口
-
-#### 常用算子
-
-基本算子map,filter,flatMap  聚合算子 keyBy,sum,min,max,minBy,maxBy,reduce
-
-聚合算子sum,reduce等，必须在keyby之后,也就是KeyedStream类型才能调用这些
-
-
 
 #### 分区策略
 
@@ -1358,21 +1210,7 @@ process的方法，可以拿到context上下文，这个context能拿到侧输�
 
 
 
-### watermark
 
-watermark是用来保证事件时间乱序到齐的一种策略，并不一定要和窗口结合用。
-
-不过事件时间窗口，是经常需要处理乱序事件的，所以经常连用。
-
-如果不设置watermark那么窗口可能因为乱序提前关闭。
-
-
-
-watermark即当前真实时间 =   当前最大事件时间 - 延迟处理
-
-案例：窗口是1-10  延迟为3  那么当有一个15的事件时间来时，会把当前真实时间推到12，
-
-比12小的窗口都会关闭。
 
 ### trigger
 
@@ -1382,7 +1220,7 @@ watermark即当前真实时间 =   当前最大事件时间 - 延迟处理
 
 
 
-#### window join
+### window join
 
 窗口之间的关联，比如滑动窗口。如果关联的数据分到2个窗口的话，会导致关联不上比如a,1   另一个流是a,11 那么关联不到。因为不同mysql表中创建数据的event time也是不同的，会出现事件事件相差很多的情况
 

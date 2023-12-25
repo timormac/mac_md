@@ -79,6 +79,8 @@ else-if +tab自动生成(){}
 
 注释  command +/单行注释 	command+option+/ 多行注释
 
+文档注释  /** + 会车
+
 删除一行  command+后退 
 
 新建一行并到行头 shift+ enter

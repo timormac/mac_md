@@ -1,22 +1,8 @@
 # 问题待解决
 
-1  现在本地创建个idea项目pro1,创建添加git依赖,生成的.git文件在pro1目录下，
-
-​	当通过idea上传到github后，会在rep1库下出现个pro1目录
-
-​	用git本地clone库的时候，本地会创建一个rep目录.git目录是在rep目录下，而不是在pro1目录下。
-
-​	当手动用idea导入项目时，要选定rep下的pro1项目.
-
-​	直接用idea导入项目会找不到maven项目,应该是因为把rep整个库当作idea项目了所以读取不到
-
-2 为什么flink_realtime那个项目没有把项目目录上传到github上，只把子项目的目录上传到github
-
 
 
 # 问题已解决(待回顾)
-
-
 
 
 
@@ -80,6 +66,26 @@ github代码突然不能push 也不能clone了，因为改成了http
 本地用idea创建项目后，有commit提交。当push时，导致2边的head不一致
 解决方法:删除github库创建一个没有commit提交记录的库
 ```
+
+
+
+# git企业管理
+
+```sql
+#企业中哪些用git管理
+hadoop等，tomcat等的框架的配置文件用git管理
+
+#jar包管理
+git是文件管理系统，每个版本会做快照，不适合管理jar包这些，不然会出现多分快照，体积很大
+jar包的管理，有持续集成jekins会保留每次的jar包。以及Artifactory、Nexus等二进制管理仓库，用来记录各版本用哪些jar包
+
+#企业回滚
+通过git记录配置文件,jekins保留jar包，Nexus管理二进制仓库。
+通过自动化脚本来处理回滚流程，自动回滚git版本，Nexus版本等
+
+```
+
+
 
 
 

@@ -199,27 +199,9 @@ zk中记录了谁是leader，kafka 2.8版本之后可以不配置zk,逐渐去zoo
 
 10个partition最多能被10个consume消费，所以合理设置consumer苏亮
 
-### learder
-
-一个topic可以设置多个副本，比如3个副本，kafka启动时，每个partition会挑选一个副本做为leader，然后消费者，生产者和这个leader交互，follower作用是实时同步leader数据,当leader失效的时候，成为leader
-
-这里的问题就是怎么保证leader和follower数据一致性的问题了
 
 
 
-### 生产者发送流程
-
-1 发送流程
-
-mian线程=>创建个producer, 调用.send(recorder) =》会有个interceptor拦截器=》序列化器Serializer
-
-=》Partitioner分区器来判断发送到哪个分区=〉内存开辟32M(默认)空间，创建个RecordAccumulator,装多个分区的queue
-
-=>当每个queue中数据 producerBath达到16k(默认),sender 线程会读取queue数据，如果sender等待linger.ms时间，batch还没满
-
-也会去queue中拉取数据=》当sender拉取batch后，会往各个分区发送请求，如果某个分区没应答，会向别的分区发送请求，最多缓存5个请求=>当分区收到数据后，会有个ack应答机制，0(不等数据罗盘就应答) ,1 (leader落盘后应答)，-1(leader和follwer都落盘再应答)
-
-2 异步发送
 
 
 

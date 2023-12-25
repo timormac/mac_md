@@ -6,6 +6,28 @@ a3包的广播
 
 # 问题待解决
 
+### 计数时间滑动窗口怎么做
+
+需求:1分钟内  登陆超过35次认为是爬虫
+
+直观思路   每来一个事件开个1分钟的窗口,窗口关闭统计次数和35比较
+
+目前不能实现，需要转换思路。
+
+### intervalJoin又是什么
+
+
+
+### connect是怎么运行的
+
+应该有理解错误,connect流和join流是2个东西。最好别弄混了
+
+2个keyed流,会把key同的流数据放到一块， 每个key单独一个小区域,  可以理解
+
+那么当一个keyed流，一个dataStream，这个connect怎么走呢？？
+
+
+
 ### FlinkKafkaConsumer过时
 
 实现sourceFunction的kafka有3个,FlinkKafkaShuffleConsumer，FlinkKafkaConsumer，FlinkKafkaConsumerBase
@@ -69,11 +91,99 @@ public class KafkaSink  implements StatefulSink,TwoPhaseCommittingSink{}
 
 写入kafka时
 
+# flink架构
+
+### taskmanager
+
+是一个jvm进程，每个taskmanager，都需要启动个yarn的container
+
+slot时taskmanager的线程，taskmanager的jvm可以有多个线程slot
+
+### sloth含义
+
+3个map算子到key by 到1个keyed算子，一共4个任务:3+1    3个slot就可以执行
+
+一个slot可以执行多个算子，既可以在map阶段算子，也可以处理reduce阶段的算子。
+
+如果某个算子工作量大，可以不设置slot共享，这样那个算子会单独占用一个slot。
+
+```
+如果没有其他算子也设置为1，那么就为独享
+map(s->s).slotSharingGroup("1") 
+```
+
+算子最大并行度 = task数*task的slot数
+
+### flink如何确定task数量
+
+当你的并行度为9时，并且你的slot参数参数为2，那么会申请5个task。
+
+并行度/slot数。
+
+注意当禁用算子链，1个task 2个slot，可执行2个算子，slot是线程，虽然2个slot都在一个jvm执行，
+
+但是2个算子还是要序列化和反序列化，通过task的网络栈来传数据。
+
+算子链是很有用的。
+
+
+
 
 
 # DataStream
 
-### 状态编程(有问题待解决)
+### 窗口函数
+
+```sql
+#类型模式
+计数，计时间
+
+
+
+
+
+```
+
+
+
+### watermark
+
+watermark是用来保证事件时间乱序到齐的一种策略，并不一定要和窗口结合用。
+
+不过事件时间窗口，是经常需要处理乱序事件的，所以经常连用。
+
+如果不设置watermark那么窗口可能因为乱序提前关闭。
+
+
+
+watermark即当前真实时间 =   当前最大事件时间 - 延迟处理
+
+案例：窗口是1-10  延迟为3  那么当有一个15的事件时间来时，会把当前真实时间推到12，
+
+比12小的窗口都会关闭。
+
+
+
+### Pojos
+
+```sql
+在 Apache Flink 中，POJO（Plain Old Java Object）类是一种普通的 Java 类，用于表示数据流中的元素。POJO 类在 Flink 中有一些规定和要求，以便能够正确地进行序列化、反序列化和处理。以下是一些常见的规定：
+
+#无参构造器
+必须有一个无参数的默认构造函数：Flink 使用反射来创建 POJO 对象，因此必须提供一个无参数的默认构造函数。
+#字段为public或设置getter/setter
+所有字段必须是公共的（public）或者有相应的 getter 和 setter 方法：Flink 使用反射来访问字段，因此字段必须是公共的，或者有对应的 getter 和 setter 方法。
+#字段为flink支持的类型
+字段必须是 Flink 支持的类型：基本类型,集合类型,Flink的特定类型（如 Tuple、Row 等）或者pojo类型
+若不是这些类型，需要实现接口（如 Serializable、Value 等）来进行序列化和反序列化。
+#不需要实现serializable
+满足以上,会自动识别为Pojo,不需要实现searizible
+
+```
+
+
+
+### 状态编程
 
 ```sql
 目前状态分为2类，keyed状态，非keyed状态，两种注册方式不一样。也可以自定义状态自己管理
@@ -85,11 +195,6 @@ keyed的流注册状态，每个key单独享有一个状态。
 #TTL(对上面所有的state做控制用的)
 这个是对keyed流中,若某个key的状态很久没有使用了，定期会删除。
 但是我想要的情况，是ListState中某些数据过期后,把list中过期数据清除，然后新建一个更小的list替换当前这个很大内存的list
-
-
-#待研究
-不过现在不知道vlue和aggregating和reducing区别,感觉这2个用value也能做
-
 
 #非keyed流状态
 非keyby的流，注册的状态，共享一个

@@ -100,23 +100,7 @@ hive表，文件格式存导致数据倾斜。
 
 保证每个压缩后的数据是128m，这样一个块一个单份数据。
 
-# 问题已解决
-
-### 列存实现原理
-
-有个误区，既然hive不是个数据库，那么表输出为什么能列存呢?列存不是只有数据库才有吗
-
-什么是行存储，什么是列存。
-
-列式存储是指一列中的数据在存储介质中是连续存储的；行式存储是指一行中的数据在存储介质中是连续存储的。
-
-### 第一次慢原因
-
-hive第一次在客户端执行sql的时候非常慢，要在各节点建yarn容器，建立过一次之后，在8088yarn页面上能看到一个任务一直在挂起
-
-### idea的hive-jar找不到
-
-api一直报错，找不到驱动，将hive-jdbc拷贝到项目下，还是不行。因为当时配置文件吧把hive地址加上了""导致的问题
+# 问题已解决(待回顾)
 
 ### map启动数和表大小对不上
 
@@ -125,6 +109,63 @@ order表中大概390M 按理来说是128一个任务，为什么是2个map任务
 客户端查看了set mapred.max.split.size  hive里设置是256M 
 
 因为默认是combineInputFormat,  所以只开启2个任务
+
+
+
+# 问题已记住(备份)
+
+```sql
+### 列存实现原理
+有个误区，既然hive不是个数据库，那么表输出为什么能列存呢?列存不是只有数据库才有吗
+什么是行存储，什么是列存。
+列式存储是指一列中的数据在存储介质中是连续存储的；行式存储是指一行中的数据在存储介质中是连续存储的。
+
+### 第一次慢原因
+hive第一次在客户端执行sql的时候非常慢，要在各节点建yarn容器，建立过一次之后，在8088yarn页面上能看到一个任务一直在挂起
+
+### idea的hive-jar找不到
+api一直报错，找不到驱动，将hive-jdbc拷贝到项目下，还是不行。因为当时配置文件吧把hive地址加上了""导致的问题
+```
+
+
+
+# hive深入细节
+
+### overwrite/into
+
+```sql
+#insert into 多并行度,会出现污染
+ INSERT INTO 操作，并且有多个 MapReduce 任务并行运行时，每个任务通常会处理表中的一部分数据。
+如果在这种并行执行的情况下，一个任务因为某些原因失败了，其他任务成功了，因为每个任务独立写入自己的数据文件，会导致部分数据成功，数据被污染。
+
+#数据污染解决思路
+使用ACID表,并且开启hive的事务，hive的metastore服务器运行正常
+执行hql前，使用事务模式
+START TRANSACTION;
+INSERT INTO tb2 SELECT * FROM tb5;
+COMMIT;
+
+#insert overwrite
+执行overwirte时，Hive通过写时复制（write-ahead logging）和事务的概念来保证操作的原子性和一致性。在执行INSERT OVERWRITE操作的过程中，如果遇到错误或失败，Hive通常会尝试回滚这个操作，以保证表数据的一致性不被破坏。Hive会将新数据写入到临时目录，只有当整个写操作成功完成后，才会将这些数据移动到目标表的目录中。如果在这个过程中出现错误，操作应该会被回滚，临时目录中的数据将不会被移动到目标表目录，从而避免了数据的污染。
+```
+
+### 调度系统
+
+```sql
+在 Unix-like 系统中，一个命令执行完成后都会返回一个退出状态码。通常，如果命令成功执行，会返回 `0`；如果执行过程中发生错误，会返回非零值。
+#bash脚本
+hive -e "SELECT * FROM your_table"
+#记录上一行脚本返回结果
+exit_status=$?
+if [ $exit_status -eq 0 ]; then
+  echo "HQL Query executed successfully"
+else
+  echo "HQL Query failed with exit status $exit_status"
+fi
+
+hive -e "SELECT * FROM your_table" > output.txt 2> error.log
+这样，标准输出会被写入 `output.txt`，而标准错误会被写入 `error.log`，你可以更容易地查看和排查问题。
+```
 
 
 
