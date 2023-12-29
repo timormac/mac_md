@@ -83,13 +83,9 @@ Flink 提供了与 HDFS（Hadoop Distributed File System）集成的功能，可
 
 
 
-
-
 #### flink任务参数作用
 
 指定taskmanager内存 还有核数 ，到时候会生成几个container
-
-
 
 
 
@@ -97,7 +93,41 @@ Flink 提供了与 HDFS（Hadoop Distributed File System）集成的功能，可
 
 
 
-# Flink优化
+# 设计优化
+
+### 状态大小
+
+```sql
+#解决方法
+1 合理设置ttl 时间
+2 可以对listState里用RockDB，并且设置定时器定期删除list中老数据，注意必须用rockRB ，详情看md文档
+3 增量checkpoint
+4 选择合理的state，如果比较大用rockdb，不会内存溢出
+
+
+"状态过大的危害"
+#内存oom
+内存和状态后端压力增大（MemoryStateBackend）或者 RocksDB（RocksDBStateBackend）中。状态增长过大可能导致内存不足，甚至可能导致 OutOfMemoryError，从而影响 Flink 任务的稳定性。
+
+#频繁gc影响性能
+垃圾回收压力增大**：对于基于 JVM 的状态后端，如 MemoryStateBackend，大量状态可能导致频繁的垃圾回收（GC），这会影响任务的性能，导致处理延迟增加。
+
+#checkpoint备份慢
+**Checkpoint 延迟**：Checkpoint 是 Flink 确保容错的机制，它会定期保存状态的快照。如果状态过大，Checkpoint 的时间会增长，这不仅影响了作业的处理时间，也可能导致 Checkpoint 间隔的延迟，从而影响恢复时间（Recovery Time Objective, RTO）。
+
+#恢复变慢
+**恢复时间增长**：在发生故障时，Flink 需要从最近的 Checkpoint 恢复状态，如果状态过大，恢复的时间也会随之增加，影响系统的快速恢复能力
+
+#hdfs存储浪费
+**存储资源消耗**：大状态意味着需要更多的存储资源来保存 Checkpoint 数据，这可能导致存储成本增加，特别是当使用外部持久化存储（如 HDFS）时。
+
+```
+
+
+
+
+
+# 参数优化
 
 ### 内存模型
 

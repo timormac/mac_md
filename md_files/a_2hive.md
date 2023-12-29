@@ -129,46 +129,6 @@ api一直报错，找不到驱动，将hive-jdbc拷贝到项目下，还是不�
 
 
 
-# hive深入细节
-
-### overwrite/into
-
-```sql
-#insert into 多并行度,会出现污染
- INSERT INTO 操作，并且有多个 MapReduce 任务并行运行时，每个任务通常会处理表中的一部分数据。
-如果在这种并行执行的情况下，一个任务因为某些原因失败了，其他任务成功了，因为每个任务独立写入自己的数据文件，会导致部分数据成功，数据被污染。
-
-#数据污染解决思路
-使用ACID表,并且开启hive的事务，hive的metastore服务器运行正常
-执行hql前，使用事务模式
-START TRANSACTION;
-INSERT INTO tb2 SELECT * FROM tb5;
-COMMIT;
-
-#insert overwrite
-执行overwirte时，Hive通过写时复制（write-ahead logging）和事务的概念来保证操作的原子性和一致性。在执行INSERT OVERWRITE操作的过程中，如果遇到错误或失败，Hive通常会尝试回滚这个操作，以保证表数据的一致性不被破坏。Hive会将新数据写入到临时目录，只有当整个写操作成功完成后，才会将这些数据移动到目标表的目录中。如果在这个过程中出现错误，操作应该会被回滚，临时目录中的数据将不会被移动到目标表目录，从而避免了数据的污染。
-```
-
-### 调度系统
-
-```sql
-在 Unix-like 系统中，一个命令执行完成后都会返回一个退出状态码。通常，如果命令成功执行，会返回 `0`；如果执行过程中发生错误，会返回非零值。
-#bash脚本
-hive -e "SELECT * FROM your_table"
-#记录上一行脚本返回结果
-exit_status=$?
-if [ $exit_status -eq 0 ]; then
-  echo "HQL Query executed successfully"
-else
-  echo "HQL Query failed with exit status $exit_status"
-fi
-
-hive -e "SELECT * FROM your_table" > output.txt 2> error.log
-这样，标准输出会被写入 `output.txt`，而标准错误会被写入 `error.log`，你可以更容易地查看和排查问题。
-```
-
-
-
 
 
 # gpt推荐的优化
@@ -489,6 +449,58 @@ hive> show locks;
 ```
 
 # ——————hive语法———————
+
+# hive深入细节
+
+### overwrite/into
+
+```sql
+#insert into 多并行度,会出现污染
+ INSERT INTO 操作，并且有多个 MapReduce 任务并行运行时，每个任务通常会处理表中的一部分数据。
+如果在这种并行执行的情况下，一个任务因为某些原因失败了，其他任务成功了，因为每个任务独立写入自己的数据文件，会导致部分数据成功，数据被污染。
+
+#数据污染解决思路
+使用ACID表,并且开启hive的事务，hive的metastore服务器运行正常
+执行hql前，使用事务模式
+START TRANSACTION;
+INSERT INTO tb2 SELECT * FROM tb5;
+COMMIT;
+
+#insert overwrite
+执行overwirte时，Hive通过写时复制（write-ahead logging）和事务的概念来保证操作的原子性和一致性。在执行INSERT OVERWRITE操作的过程中，如果遇到错误或失败，Hive通常会尝试回滚这个操作，以保证表数据的一致性不被破坏。Hive会将新数据写入到临时目录，只有当整个写操作成功完成后，才会将这些数据移动到目标表的目录中。如果在这个过程中出现错误，操作应该会被回滚，临时目录中的数据将不会被移动到目标表目录，从而避免了数据的污染。
+```
+
+### 调度系统
+
+```sql
+在 Unix-like 系统中，一个命令执行完成后都会返回一个退出状态码。通常，如果命令成功执行，会返回 `0`；如果执行过程中发生错误，会返回非零值。
+#bash脚本
+hive -e "SELECT * FROM your_table"
+#记录上一行脚本返回结果
+exit_status=$?
+if [ $exit_status -eq 0 ]; then
+  echo "HQL Query executed successfully"
+else
+  echo "HQL Query failed with exit status $exit_status"
+fi
+
+hive -e "SELECT * FROM your_table" > output.txt 2> error.log
+这样，标准输出会被写入 `output.txt`，而标准错误会被写入 `error.log`，你可以更容易地查看和排查问题。
+```
+
+### distinct效率低
+
+```sql
+#为什么distinct效率低
+group by是分组函数，也可以用来去重。
+hive引擎解析group by时，会执行优化，会在map端预聚，减少传输到reduce的数据量。
+而hive执行distinct时，不会进行map预聚合。在DISTINCT操作中，所有的输出都需要在Reduce阶段进行去重，这意味着即使有重复的记录也需要被传输到Reducer，然后由Reducer去除重复，这可能会导致更多的网络传输和数据处理。
+
+#预聚合的实现
+预聚合是通过使用Combiner来实现的，Combiner是一种优化机制，它在Map阶段的输出结果上执行Reduce阶段的相同操作，以减少需要传输的数据量。
+```
+
+
 
 # 数据类型对比mysql
 

@@ -371,93 +371,6 @@ A2_TopnWindowAll有个bug，就是总是报错.ArrayIndexOutOfBoundsException: -
 
 
 
-# 问题已解决
-
-
-
-### TableApi用moudule时找不到类
-
-把hadoop-mapreduce-..jar拷贝到flink中，其他的方法都不解决根本。这个最好使，在word里
-
-坑已经被视频趟过了
-
-
-
-### kafka.consumer.OffsetResetStrategy
-
-```mysql
-#报错
-cannot assign instance of org.apache.kafka.clients.consumer.OffsetResetStrategy to field org.apache.flink.connector.kafka.source.enumerator.initializer.ReaderHandledOffsetsInitializer.offsetResetStrategy of type org.apache.kafka.clients.consumer.OffsetResetStrategy in instance of org.apache.flink.connector.kafka.source.enumerator.initializer.ReaderHandledOffsetsInitializer
-
-#原因
-根本原因是Flink从Java和UserCode Classpath动态加载依赖项。有些类可以由不同的类加载器加载，然后将它们的类型分配给彼此。
-
-#解决方法：
-flink的conf.yaml文件加一条
-echo 'classloader.resolve-order: parent-first' >> flink/conf/flink-conf.yaml
-
-#问题解决来源
-https://stackoverflow.com/questions/72266646/flink-application-classcastexception
-
-```
-
-
-
-### flink参数设置单容器核数不生效
-
-因为容量调度里里是按内存分核的，所以要改yarn的配置。是yarn的问题
-
-
-
-### flink连接hive时报错找不到方法
-
-NoSuchMethodError: com.google.common.base.Preconditions.checkArgument
-
-基本已经定位到了就是hadoop-common再个包导致的，视频没导入，gpt推荐的，很坑
-
-具体链接：https://blog.51cto.com/u_15278282/4221694
-
-在hadoop目录下的/export/server/hadoop/share/hadoop/common/lib文件夹中，存在着guava-27.0-jre.jar这个包，而在/export/server/hive/lib文件夹中，存在着guava-19.0.jar和guava-27.0-jre.jar这两个对应的包，此时发生了包冲突，产生了错误，因此这里需要把guava-19.0.jar的包删除
-
-
-
-
-
-# 问题已理解(备份)
-
-
-
-```sql
-### 三流join怎么实现
-看了下源码,connect流只能存2个流数据，当多流join，只能按照hql的解析方式，拆分为多个join任务，先关联一个处理后再关联下一个。你也可以自定义个一个connect流，然后自己生成多流join逻辑。
-
-### 水位线不推进
-没设置并行度导致默认是8个线程，而水位线必须8个流里的数据都有数据并且事件时间更新到10s时才触发process执行
-因为之前输入的key都是a,b导致其他线程没数据，导致其他线程水位线时间不更新，所以尽管a,1000但是还是不触发process窗口关闭
-* 后面设置并行度为2,就好了，不过必须a,b 2个事件时间都超过10
-* 为了避免这种情况可以设置空闲时间等待.withIdleness(Duration.ofSeconds(10))
-* //空闲等待10s，即当10s内其他分区没有数据更新事件时间是，等10s，按最大的时间时间同步到其他没数据的分区
-
-#checkpoint单独使用
-即使没注册状态,checkpoint也可以用，比如记录kafka的消费,有checkpoint提交偏移量，可以保证不丢。
-checkpoint也能结合下游事务，比如两阶段提交，flink会自动结合checkpoint做事务。
-
-
-### yarn-session模式起不来任务
-"application任务被杀"
-启动任务后显示任务被yarn杀掉
-原因： 如果 Flink 或者用户代码分配超过容器大小的非托管的堆外（本地）内存，部署环境可能会杀掉超用内存的容器，造成作业执行失败。
-"更改配置文件后连yarn-sesion都起不来"
-为了资源够slut,更改flink配置文件，发现起不来了。后面查阅发现，好像比如jobmanager和taskmanager有一定内存比例的，而且分给某些线程的内存要在固定60m-256m范围之间，因为只改了jobmanager和taskmanager的内存配置，所以起不来了。
-
-
-
-
-
-```
-
-
-
 
 
 # ——————flink文档——————
@@ -738,133 +651,6 @@ tableEnv.executeSql(
 
 
 
-# Flink集群
-
-### 客户端指令
-
-启动：在project2中执行 bin/start-cluster.sh  
-
-UI端口 8081
-
-# flink-yarn模式
-
-
-
-### seeion和application区别
-
-```sql
-Flink on YARN是Apache Flink在YARN上的一种运行模式，它利用YARN作为资源管理器和调度器来管理Flink作业的执行。在Flink on YARN中，有两种常见的提交任务方式：YARN session模式和YARN application模式。
-
-1. YARN Session模式：
-   - 在YARN session模式下，Flink作业以长期运行的Flink会话方式提交到YARN。这意味着Flink作业在提交后会一直运行，直到显式终止或发生错误。
-   - 在这种模式下，Flink作业共享同一个Flink集群，可以通过Flink命令行界面或REST接口提交作业，并可以在会话期间提交多个作业。
-   - YARN session模式适用于长时间运行的作业，例如流处理应用或长时间批处理作业。
-
-2. YARN Application模式：
-   - 在YARN application模式下，每个Flink作业都作为一个独立的YARN应用程序提交和执行。每次提交作业都会启动一个新的Flink集群。
-   - 在这种模式下，每个作业都有独立的资源分配和执行环境，作业之间相互隔离，互不影响。
-   - YARN application模式适用于短期运行的作业，例如一次性的批处理作业或短暂的流处理作业。
-
-选择使用哪种模式取决于你的具体需求：
-- 如果你需要长期运行的会话环境，并且希望在会话期间提交多个作业，那么YARN session模式是一个不错的选择。
-- 如果你有短期运行的作业，或者希望每个作业都有独立的资源和执行环境，那么YARN application模式更合适。
-
-总之，YARN session模式适用于长期运行的会话环境，而YARN application模式适用于短期运行的独立作业。选择适合你需求的模式可以更好地管理和调度你的Flink作业。
-```
-
-
-
-### yarn -session
-
-```sql
-#会话模式场景
-在会话模式下，Flink集群会一直运行，并在需要时接受多个应用程序的提交和执行。
-应用程序可以通过Flink的客户端提交到集群，并保持运行状态，直到显式地取消或终止。
-这种模式适用于需要交互式开发和测试多个应用程序的场景，或者需要长时间运行的应用程序。
-
-#启动session集群命令，启动后有UI界面，并且提交的application任务
-/bin/yarn-session.sh -nm tiomr_session
-
----------------------------------------------------------------------------------
-#会话模式，会提交到session集群中
-bin/flink run-application -t yarn-application -c Wordcount  a.jar 
-
-#应用模式和会话模式写法相同，不过应用模式，不需要提前启动session集群
-bin/flink run-application -t yarn-application -c WordCount a.jar 
-#单作业
-bin/flink run -d -t yarn-per-job -c WordCount a.jar
-
-
-
-其他参数
-#指定yarn的lib目录,减少flink依赖包上传时间，其他节点没安装flink没有相关lib
--Dyarn.provided.lib.dirs="hdfs://project1:8020/flink-dist/*"
-#指定主类
--c com.atguigu.wc.SocketStreamWordCount
-#jar路径可为hdfs路径
-hdfs://hadoop102:8020/a.jar
-
-#通过--help 指令查看帮助，可能用到的
--D <property=value>使用给定属性的值  所以总是看到D开头的很长的
--qu，——queue <arg>指定YARN队列。 
- -at，——applicationType <arg>为YARN上的应用设置自定义应用类型 
-
--d，——detached如果存在，则以分离模式运行作业 
--h，——help Yarn会话命令行帮助。 
--id，——applicationId <arg>附加到正在运行的YARN会话 
--j，——jar <arg> Flink jar文件的路径 
--jm，——jobManagerMemory <arg> JobManager容器内存，可选单位(默认:MB) 
--m，——jobmanager <arg>要连接的jobmanager (master)的地址。使用此标志连接到与配置中指定的JobManager不同的JobManager。 
--nl，——nodeLabel <arg>指定YARN应用的YARN节点标签 
--nm，——name <arg>设置YARN上应用程序的自定义名称 
--q，——query显示可用YARN资源(内存，内核) 
--s，——slots <arg>每个TaskManager的插槽数 
--t，——ship <arg>发送指定目录下的文件(t用于传输) 
--tm，——taskManagerMemory <arg>每个TaskManager容器的内存，可选单位(默认:MB) 
--yd，——yarndetached如果存在，则以分离模式运行作业(已弃用;使用非特定于yarn的选项代替) 
--z，——Zookeeper Namespace <arg> Namespace用于创建高可用模式下的Zookeeper子路径
-```
-
-
-
-### yarn-application
-
-```sql
-#使用场景
-应用模式是在YARN上运行Flink应用程序的一种模式，它可以将Flink应用程序作为YARN应用程序提交和执行。
-YARN会为Flink应用程序分配资源，并负责管理应用程序的生命周期。
-相当于通过yarn启动了个session集群
-
-
-#启动命令
-bin/flink run-application -t yarn-application -c WordCount a.jar 
-
-#指定lib路径，减少上传hdfs
--Dyarn.provided.lib.dirs="hdfs://project1:8020/flink-dist/*"
-#jar可指定hdfs路径
-hdfs://project1:8020/a.jar
-
-
-#全命令演示
-./bin/flink run-application -t yarn-application    -Dyarn.provided.lib.dirs="hdfs://project1:8020/flink_need/flink_jars_lib"      -c FlinkTestMain  hdfs://project1:8020/flink_need/demo_jars/flink_test-1.0.jar
-
-```
-
-
-
-### 单作业模式(基本不用)
-
-```sql
-#使用场景
-单作业模式下，每个应用程序都会启动一个独立的Flink集群，并在应用程序执行完成后自动关闭。
-这种模式适用于需要独立部署和管理的单个应用程序，每个应用程序有自己的资源需求和环境要求。
-
-#启动命令
-bin/flink run -d -t yarn-per-job -c WordCount a.jar
-```
-
-
-
 
 
 # flink中概念
@@ -1078,26 +864,6 @@ taskmanager.numberOfTaskSlots: 8
 
 # DataStream API核心
 
-#### 分区策略
-
-常见的物理分区策略有：随机分配（Random）、轮询分配（Round-Robin）、重缩放（Rescale）和广播（Broadcast）
-
-分区策略是指同一个消息源，按什么方式发送给并行度,比如2个并行度，如果按random，运气不好可能全发给2线程
-
-random策略通过 ds.shuffle()来调用
-
-轮询策略通过ds.rebalance()来调用
-
-广播策略通过ds.broadcast()调用，所有的消息发送给所有并行度，重复数据
-
-
-
-#### 分流合流
-
-union省略过
-
-connect 如果用process进行
-
 #### 窗口
 
 窗口如果不用keyby的话，则无论怎么设置并行度，强制变为1  。用keyby的话，才有并行度。
@@ -1156,20 +922,6 @@ aggreagte算子只有窗口流才能用,keyby的流没有这个方法
 
 
 
-
-
-#### process函数
-
-process的方法，可以拿到context上下文，这个context能拿到侧输出流,能拿到wiondow(对于窗口stream的process方法)
-
-
-
-触发器
-
-移除器
-
-时间语义
-
 #### 水位线watermark
 
 注意水位线并不是只有窗口才用得到，普通的流也可以用到watermark，并且设置定时器
@@ -1209,14 +961,6 @@ process的方法，可以拿到context上下文，这个context能拿到侧输�
 窗口迟到数据进入不到窗口的,
 
 
-
-
-
-### trigger
-
-是控制窗口何时关闭的组件。
-
-### 
 
 
 
@@ -1292,15 +1036,7 @@ Flink提供了8个不同的处理函数：
 
 定时器必须是keyby中后的流才能使用,相同的key如果注册多次定时器，后注册的会替换老的定时器
 
-# 状态管理
 
-在process方法中，定义一个ValueState<Interger>，即是状态，和自己定义一个变量 int a有区别
-
-当keyby分区的时候，定义的ValueState不同的key有各自的，而定一个int a不同key公用一个.
-
-必须在open中初始化，如果在定义时初始化，会因为类加载问题报错。
-
-如果不够flink提供的State类，那么自己存的话，要用map去存，存一个key对应的value
 
 
 
@@ -1320,11 +1056,7 @@ Flink提供了8个不同的处理函数：
  */
 ```
 
-#### ？？如何开启checkponit
 
-开启checkpoint目前有2个方法，辉总和1.172个方法调用？
-
-辉总的flink的kafka properties的设置，去过去看看，有个专门的kafka 2.4.1版本枚举类
 
 
 
@@ -1373,14 +1105,6 @@ flink能对接hive表,不过flink不是个流吗？难道能监控hive表中数�
 tableapi 虽然看着是流，不过会根据你的数据来源头，决定是流处理还是批处理，一个sql，多场景使用
 
 
-
-
-
-# CDC
-
-用了和canal和maxwell一个类似的框架，derbzem来实现flink直接监控mysql变化的。
-
-用处，不通过maxwell和kafka直接去mysql里监控，少一层。
 
 
 
