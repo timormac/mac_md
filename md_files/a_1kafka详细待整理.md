@@ -2,7 +2,7 @@
 
 p19事务没听懂，结合笔记看
 
-看到p41
+看到p85源码
 
 
 
@@ -18,7 +18,182 @@ p19事务没听懂，结合笔记看
 
 
 
-# 参数调优
+#### 消费者拉数据
+
+视频说是频次是：每隔一段时间拉取，或者batch达到一定大小拉取。
+
+时间我可以理解，API代码里也有设置。这个大小怎么理解？难道到时间了去拉取，不够的话，不拉取吗？
+
+不太理解
+
+
+
+#### 消费者分区策略重连 
+
+问题是，当consumer挂了，会触发在分区。当重启之后，还能保证和原来的消费分区一致吗？
+
+#### 消费者事务代码怎么写
+
+当下游支持事务时，比如mysql，那么如何保证offset提交
+
+
+
+
+
+# kafka历史版本特性
+
+Kafka是一个分布式流处理平台，用于高吞吐量、可扩展的实时数据传输和处理。下面是Kafka的一些重要版本及其主要特性的概述：
+
+1. Kafka 0.8.x系列：这是Kafka的初始版本，包括基本的消息传输和持久化功能。该版本引入了Kafka的核心概念，如主题（Topic）、分区（Partition）和消费者组（Consumer Group）。
+2. Kafka 0.9.x系列：这是Kafka的重要升级版本，引入了一些关键的改进和新特性。其中一些重要的特性包括：
+   - Kafka Connect：用于连接Kafka与外部系统的插件框架，简化了数据的导入和导出。
+   - Kafka Streams：用于构建实时流处理应用程序的库，使得在Kafka上进行流处理更加方便。
+   - 新的消费者API：引入了新的Java消费者API，提供更好的消费者管理和协调能力。
+   - 消息格式兼容性：支持在不中断服务的情况下对消息格式进行升级和演进。
+3. Kafka 1.0.x系列：这个版本引入了一些重要的改进和新特性，包括：
+   - 事务支持：引入了事务性生产者和消费者API，使得在Kafka中实现原子性的消息处理更加容易。
+   - 消息幂等性：提供了幂等性的生产者API，确保相同消息的重复发送不会导致数据重复。
+   - 改进的管理工具：提供了更好的管理和监控工具，如Kafka集群管理工具、监控指标等。
+4. Kafka 2.0.x系列：这个版本引入了一些重要的改进和新特性，包括：
+   - Exactly-Once语义：通过引入事务性读写API和幂等性消费者API，实现了精确一次的消息处理保证。
+   - Kafka Streams增强：提供了更多的流处理功能和操作，如窗口操作、状态存储等。
+   - 改进的Kafka Connect：增加了更多的连接器和插件，使得与其他系统的集成更加方便。
+
+5.  2.8新特性，kafka-kraft模式，把zookeeper干掉了
+
+
+
+
+
+# 消息队列作用
+
+1 消费者拓展性
+
+消息发布者，只管往队列里传数据，谁消费自己去拉取，增加的消费者的拓展性，相比于推送消息的方式。
+
+2  消峰缓冲作用
+
+kafka的吞吐量很大，写入很快，对于有的框架写入很慢的，可以用kafka消峰，高峰期数据太多的问题
+
+3 解耦
+
+数据发送者和接受者解开，不是直接用代码联通，减少代码开发。
+
+比如mysql,monggo,flume多个数据库，对接多个消费者(hadoop,flink,spark)，不可以n*m的方式，每种配对都写一个api
+
+大家统一完成对kafka的接口就行，这样通过kafka就能连通了
+
+4 异步处理
+
+用户注册后2个操作，1返回页面   2发送短信(操作很慢),如果第一个用户访问没执行完毕，第二个用户访问不能执行
+
+所以把发送短信操作改为写入kafka中(写入kafka执行很快)，然后另外一个程序执行这个，1个连贯动作变成2个程序来连贯。
+
+
+
+# paxos算法
+
+知乎的这个是抄的，缺东西：https://zhuanlan.zhihu.com/p/31780743
+
+下面是从知乎评论区找到的
+
+https://www.cnblogs.com/linbingdong/p/6253479.html
+
+
+
+# kafka遇到的坑
+
+#### 消息排序
+
+看知乎连接：https://zhuanlan.zhihu.com/p/351813190
+
+
+
+
+
+
+
+# 客户端指令
+
+kafka-topic.sh 什么都不输入，就会显示有哪些参数可以输出
+
+
+
+### 启动关闭
+
+启动在各自节点上执行  kafka-server-start.sh -daemon $KAFAKA_HOME/config/server.properties
+
+关闭:  各自节点执行 kafka-sever-stop.sh
+
+### topic相关
+
+查看所有topic  
+
+ kafka-topics.sh   --list  --bootstrap-server lpc@project1:9092 
+
+创建topic
+
+kafka-topics.sh   --bootstrap-server  lpc@project1:9092   --create --topic name   --partitions 2   --replication-factor 2
+
+删除topic
+
+kafka-topics.sh  --bootstrap-server  lpc@project1:9092  --delete --topic  name
+
+需要server.properties中设置delete.topic.enable=true否则只是标记删除。
+
+查看topic详情
+
+kafka-topics.sh --bootstrap-server  lpc@project1:9092  --describe --topic first
+
+修改分区数
+
+kafka-topics.sh --bootstrap-server   lpc@project1:9092  --alter --topic first --partitions 6
+
+
+
+和topic相关的用bootstrap-server服务端
+
+--broker-list是broker的节点。
+
+
+
+### 发送消费数据
+
+1 向topic中发数据（必须是broker_list）
+
+用bootstrap_server不行，报错
+
+kafka-console-producer.sh   --broker-list     lpc@project1:9092   --topic   maxwell
+
+
+
+下面的是执行不了的
+
+kafka-console-producer.sh   ---bootstrap-server     lpc@project1:9092   --topic   maxwell
+
+
+
+2 消费topic数据
+
+kafka-console-consumer.sh --bootstrap-server lpc@project1:9092 --from-beginning  --topic a --group group1
+
+
+
+3查看消费者组的偏移量，不能指定话题
+
+kafka-consumer-groups.sh --bootstrap-server   lpc@project1:9092 --group my_group1   --describe
+
+4查看有哪些消费则组
+
+kafka-consumer-groups.sh --bootstrap-server project1:9092    --list
+
+
+
+
+
+
+
+# API参数调优
 
 ```sql
 #合理设置kafka副本数
@@ -47,20 +222,9 @@ max.in.flght.request.per.connection =1
 
 
 
-
-
-
 ```
 
 
-
-# API
-
-ProducerConig
-
-ConsumerConfig
-
-这两类有配置文件，可设置参数，以及参数可选范围
 
 # producer
 
@@ -370,13 +534,36 @@ kafka不对数据做任何处理,不走应用层，直接进网卡，传给消�
 
 
 
-### 参数设置
+### 消费积压参数调优
 
 ```sql
-#
+#增大每次拉取条数
+增大条数,同时也要注意最大拉取大小的调整，每条1k 1000条就是1M ,最大的要比这个大。
 ```
 
 
+
+### 分区策略
+
+```sql
+#默认
+默认的是range + cooperaterSticky
+
+#range策略
+如果不是整数倍关系，那么前面的消费者会多分担几个partition，如果消费多个topic,并且分区都不是整数倍，那么consumer1会任务太重
+重点是：当某个consumer挂了,range策略会把该consumer控制的所有分区，整体全给另一个consumer，这个是不合理的，会数据倾斜。
+
+#roundRobin
+当你消费多个topic时，会把所有topic的所有partition进行轮询，这样不会出现range策略,consumer1任务太重.
+当当某个consumer挂了，会将把该consumer控制的所有分区，再轮询给剩下的consumer，不会数据倾斜。
+
+#sticky
+感觉和range差不多，再平衡也差不多，具体看文档
+
+#问题是，当consumer挂了，重启之后，还能保证和原来的消费分区一致吗？
+
+
+```
 
 
 
@@ -386,5 +573,106 @@ kafka不对数据做任何处理,不走应用层，直接进网卡，传给消�
 #存在哪
 老版本存在zookeeper 
 0.9版本之后，存在kafka的 consumer_offset的主题
+
+#自动提交offset
+enable.auto.commit 默认是开启的
+auto.commit.interval.ms 提交间隔默认是5s提交一次
+
+#手动提交offset
+"同步提交"
+提交offset成功后，才会继续下一次拉取数据
+
+"异步提交"
+发送offset后，就会继续拉取数据，不管是否提交offset成功
+
+#指定offset消费
+earliest：最早
+latest: 最新
+none：如果无偏移量报错
+
+#按照时间消费
+具体看代码
+
+```
+
+### 消费者事务
+
+```sql
+自动提交offset可能会漏，也可能会重复
+手动提交offset，先操作再提交，可能会重复，后提交再操作可能会漏数据
+
+需要实现kafka的offset的事务提交，以及下游支持事务，才能保证精准一次。
+#具体代码待补充
+```
+
+
+
+# 企业调优案例
+
+
+
+### producer调优
+
+```mysql
+详情看producer
+```
+
+### broker调优
+
+```mysql
+
+具体看pdf broker，内容很多
+auto.leader.rebalance.enable 自动平衡默认是true，建议关掉，不然平衡时无法消费数据。
+
+
+#内存设置
+内存 = 堆内存 + 页缓存
+堆内存建议10-15个g ,如果使用率超过70%就要调大了
+页缓存建议 1g  详细具体看p76
+
+#cpu核数选择
+假设cpu核数是32
+负责读写磁盘线程 占总核数0.5 16个 ，
+副本同步leader线程，0.15 4个 ,
+数据传输线程 0.3  8个  
+
+
+#指令查看jvm进程情况
+jstat -gc  进程号  2s  20   查看kafka的gc情况。 2s 是每2s打印一次gc  20是 打印20次
+jmap -heap 进程号   查看堆内存使用情况
+```
+
+### consumer调优
+
+```mysql
+具体看pdf
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# 完结撒花
+
+
+
+
+
+
+
+```
+
 ```
 

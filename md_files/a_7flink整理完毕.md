@@ -6,6 +6,16 @@ a3包的广播
 
 # 问题待解决
 
+### yarn-session无法提交job
+
+启动yarn-sesion，正常会按conf里面的，开启job和taskmanager
+
+我手动指定yarn-session的总task和job的内存，slot后，还是为0，所以有问题了
+
+但是现在的yarn session可用slot为0 ，所以提交不成功。
+
+
+
 ### 计数时间滑动窗口怎么做
 
 需求:1分钟内  登陆超过35次认为是爬虫
@@ -271,6 +281,9 @@ run-application模式下，JobManager 和 TaskManager 是一起的。JobManager 
 当你启动一个 Flink Session 集群时，JobManager 和所有配置的 TaskManager 都会启动并保持运行状态。
 后续你加入任务，直接加入而不是临时启动。所有的任务共享一个JobManager
 
+#启动session集群
+启动session时你可以指定task和job的内存大小，并且指定启动多少个task
+
 当你提交一个任务到 Session 集群时：
 - 不会为该任务临时启动新的 JobManager 或 TaskManager。任务会使用已经启动的集群资源。
 - 每个提交的任务，不会独享TaskManager 或 JobManager。任务会在可用的 TaskManager slot 中运行。如果有足够的空闲 slot，多个任务可以并行运行。
@@ -281,6 +294,8 @@ run-application模式下，JobManager 和 TaskManager 是一起的。JobManager 
 
 #启动session集群命令，启动后有UI界面，并且提交的application任务
 /bin/yarn-session.sh -nm tiomr_session
+#配置启动参数
+/yarn-session.sh -n 1 -s 3 -jm 2048 -tm 2048  -nm tiomr_session
 
 #会话模式，会提交到session集群中
 bin/flink run-application -t yarn-application -c Wordcount  a.jar 
@@ -307,6 +322,10 @@ run-application模式下，JobManager 和 TaskManager 是一起的。JobManager 
 
 #启动命令
 bin/flink run-application -t yarn-application -c WordCount a.jar 
+
+#配置启动参数
+bin/flink run-application  -n 1 -s 3 -jm 2048 -tm 2048    -t yarn-application -c WordCount a.jar 
+这里的-n,-s,-jm,-tm都是配置临时启动的flink集群可用核数
 
 #指定lib路径，减少上传hdfs
 -Dyarn.provided.lib.dirs="hdfs://project1:8020/flink-dist/*"
@@ -338,9 +357,24 @@ bin/flink run -d -t yarn-per-job -c WordCount a.jar
 
 ### taskmanager
 
+```sql
+#简介
 是一个jvm进程，每个taskmanager，都需要启动个yarn的container
+slot时taskmanager的线程，taskmanager的jvm可以有多个线程slot,
 
-slot时taskmanager的线程，taskmanager的jvm可以有多个线程slot
+#注意
+虽然多个slot是一个taskmanager的jvm下，但是slot不共享内存，2个算子还是要序列化和反序列化。
+可以理解成每个slot是单独的程序，只是在同一个jvm下运行
+
+#案例
+yarn-session模式下，启动时设置4个taskmanager,每个4个插槽，共16个slot。你占用15个，剩下一个还是可以提交flink任务的。
+因此同一个jvm,不同slot可以执行不同的flink任务，所以slot之间不互通
+
+```
+
+
+
+
 
 ### slot含义
 
@@ -349,6 +383,14 @@ slot时taskmanager的线程，taskmanager的jvm可以有多个线程slot
 一个slot可以执行多个算子，既可以在map阶段算子，也可以处理reduce阶段的算子。
 
 如果某个算子工作量大，可以不设置slot共享，这样那个算子会单独占用一个slot。
+
+#注意
+虽然多个slot是一个taskmanager的jvm下，但是slot不共享内存，2个算子还是要序列化和反序列化。
+可以理解成每个slot是单独的程序，只是在同一个jvm下运行
+
+#案例
+yarn-session模式下，启动时设置4个taskmanager,每个4个插槽，共16个slot。你占用15个，剩下一个还是可以提交flink任务的。
+因此同一个jvm,不同slot可以执行不同的flink任务，所以slot之间不互通
 
 ```
 如果没有其他算子也设置为1，那么就为独享
