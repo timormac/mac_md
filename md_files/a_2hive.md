@@ -4,7 +4,15 @@
 
 
 
+视频进度p19
+
+
+
 # 问题待解决
+
+### hive on spark中driver内存
+
+下面，为什么给driver设置那么大内存12G，每个task启动一个12g的driver不浪费吗
 
 ### hive 2.1版本后支持ACID
 
@@ -68,7 +76,46 @@ java.lang.NoClassDefFoundError: org/antlr/runtime/tree/CommonTree
 
 
 
-### 10表关联会多次map join吗
+
+
+### map join多个场景
+
+map join  若参与join的n个表中,有n-1个表足够小，那么map会把小表全部缓存，然后找出一个最大的表，对最大的表进行扫描关联小表
+					在map端进行join。
+
+那么当5个表，3个小表，2个大表关联的时候，怎么生成的记性计划呢。
+
+
+
+map join 能加载的表，是按总大小计算吗？还是说只要表小于25m，那么不管多少个表，都加载内存
+
+
+
+我连续用了2个join之后，执行计划就复杂了很多。
+
+
+
+//变成3个表join之后，执行计划就复杂了不少
+--  explain select
+-- orderinfo.orderno,
+-- userino.name,
+-- userinfo2.name
+
+-- from warehouse.dwd_mysql_orderinfo as orderinfo
+
+--  left join warehouse.ods_mysql_userinfo as userino
+
+--  on orderinfo.userid = userino.id
+
+--  left join  warehouse.ods_mysql_userinfo as userinfo2
+--  on userino.id = userinfo2.id
+--  ;
+
+
+
+
+
+
 
 
 
@@ -100,15 +147,88 @@ hive表，文件格式存导致数据倾斜。
 
 保证每个压缩后的数据是128m，这样一个块一个单份数据。
 
+
+
+
+
+
+
 # 问题已解决(待回顾)
 
-### map启动数和表大小对不上
+### hive对orc更效率
 
-order表中大概390M 按理来说是128一个任务，为什么是2个map任务呢
+orc格式是为了提升hive效率设计的，所以hive能更了解如何读取orc文件。
 
-客户端查看了set mapred.max.split.size  hive里设置是256M 
+所以hive on spark处理 orc表数据，会比同样的hql放到spark on hive要快。
 
-因为默认是combineInputFormat,  所以只开启2个任务
+不过新版本spark可能会优化orc的读取性能问题
+
+### 压缩文件的mr并行度
+
+```sql
+#不可切分的压缩格式
+案例1:
+如果你讲一个100g的文件，采用snappy压缩到1g,上传到hdfs上，会被切分成8个block，但是你执行mr只会启动一个map任务，因为snappy不支持切分
+
+案例2:
+你用一个hql执行insert into 另一个表，并且只有1个reduce，这个表的压缩格式是snapyy。那么也是同理，读取时只有一个map
+
+#parquet/orc的牛逼
+parquet格式，内部默认是snappy压缩，但是parquet是可以压缩+切分。就算你使用一个reduce插入的10g数据
+
+#原因：
+Parquet是一个列式存储格式，它支持嵌套的记录。Parquet文件本身包含了多个独立的行组（row groups），每个行组包含了一部分数据，并且可以被独立地读取和解压缩。这是Parquet实现可切分压缩的关键。
+
+Snappy压缩是在每个行组的级别上应用的，而不是在整个文件上。因此，即使你设置了reduce任务的数量为1，生成的Parquet文件也会包含多个行组，每个行组都可以独立地被Map任务处理。
+
+在Hive执行`INSERT INTO`操作时，如果reduce阶段的输出是一个大的数据集（比如10GB），并且输出格式设置为Parquet，那么reduce任务会生成一个Parquet文件，Hive可以启动多个Map任务
+```
+
+
+
+### n表关联会多次map join吗
+
+会,  根据视频的说法：map join  若参与join的n个表中,有n-1个表足够小，那么map会把小表全部缓存，然后找出一个最大的表，对最大的表进行扫描关联小表，在map端进行join。
+
+
+
+### spark shuffle服务问题
+
+当一个excutor执行完毕后要进行shuffle时,输出的数据统一shuffle服务管理，这样就可以提前关闭excutor了。
+
+视频了出的问题在p17，开启shuffle服务了,但是后面的excuotor拉取不到想要的数据，因为新版老版协议问题。
+
+
+
+### map-join阀值过大
+
+YARN的容器设置最大内存为8GB，并将MapJoin阈值设置为6GB，这里有几个潜在的问题：
+
+1. 内存溢出风险：尽管容器有8GB的内存，但这不仅仅是为了MapJoin。Map任务还需要内存来处理数据、运行Hive任务以及其他可能的内存消耗。如果你把MapJoin的阈值设置得太高，接近于容器的最大内存，可能会导致内存溢出错误，因为Map任务没有足够的内存来处理所有的需求。
+2. 占用过多内存, 如果不进行map join，container申请的可能只是1g，当你设置map join，并且维度表6g，每个container都会申请最大的8g，因此导致集群最后申请的container数量变少，并行度降低
+4. GC（垃圾回收）压力：大内存分配通常意味着更大的GC压力。Java虚拟机（JVM）中的垃圾回收可能会变得更加频繁，这可能会影响到Map任务的性能。
+
+
+
+### hive -e指令报错
+
+```mysql
+您在定义 `sql` 变量时使用了引号，这导致整个查询字符串被视为一个单独的参数传递给 `hive -e` 命令。这可能会导致语法错误或意外的行为。
+
+要解决这个问题，您可以尝试修改脚本，将 `sql` 变量定义为仅包含查询语句，而不包含引号。然后，将查询语句直接传递给 `hive -e` 命令，如下所示：
+
+#!/bin/bash
+sql="select userid,sum(paid) as total_paid,count(*) as total_num from warehouse.dwd_mysql_orderinfo group by userid limit 20"
+
+/opt/module/hive/bin/hive -e "$sql" > /home/lpc/shells_hadoop/hql.result
+
+
+在这个修改后的脚本中，`sql` 变量只包含查询语句本身，不包含引号。然后，`"$sql"` 将会将查询语句作为一个整体传递给 `hive -e` 命令。这样，您应该能够成功执行查询并将结果保存到指定的文件中。
+
+原来的写法是直接 hive -e $sql ,然后我在$sql变量里嵌套" 'select '" 语句是不行的
+```
+
+
 
 
 
@@ -125,59 +245,21 @@ hive第一次在客户端执行sql的时候非常慢，要在各节点建yarn容
 
 ### idea的hive-jar找不到
 api一直报错，找不到驱动，将hive-jdbc拷贝到项目下，还是不行。因为当时配置文件吧把hive地址加上了""导致的问题
+
+### map启动数和表大小对不上
+
+order表中大概390M 按理来说是128一个任务，为什么是2个map任务呢
+客户端查看了set mapred.max.split.size  hive里设置是256M 
+因为默认是combineInputFormat,  所以只开启2个任务
 ```
 
 
 
+# DataGrip集成工具
+
+### 配置hive连通
 
 
-# gpt推荐的优化
-
-Hive查询的手动优化通常涉及对查询本身、数据模型和Hive配置的深入理解。这里有一些高级的优化技巧，这些技巧超出了Hive优化器（如CBO，代价基优化器）的自动优化范围：
-
-1. **分区和分桶**:
-   分区可以帮助Hive查询只扫描包含相关数据的子集，而分桶可以提供更细粒度的数据组织方式。正确使用分区和分桶可以显著提高查询性能。
-
-2. **合并小文件**:
-   如果数据由许多小文件组成，可能会导致大量的HDFS读取开销。可以使用`ALTER TABLE CONCATENATE`命令或者设置`hive.merge.mapfiles`和`hive.merge.mapredfiles`为`true`来合并这些小文件。
-
-3. **物化视图**:
-   物化视图存储查询结果，当对相同的数据执行多次查询时，可以直接从物化视图获取结果，而不是重新计算。在Hive中，可以创建物化视图来优化经常执行的复杂查询。
-
-4. **选择合适的文件格式**:
-   根据查询的性质，选择合适的文件格式（如Parquet, ORC等）可以提高性能。列式存储格式特别适合于执行大量的聚合操作。
-
-5. **使用Hive变量**:
-   可以使用Hive变量来动态调整查询，这样就可以重用查询模板，避免为不同的查询场景编写多个查询语句。
-
-6. **调整JOIN策略**:
-   Hive支持几种不同的JOIN策略，如MapJoin, SMBJoin等。在某些情况下，手动指定JOIN策略可以提高查询效率。
-
-7. **使用合适的压缩**:
-   启用压缩可以减少存储空间的使用，同时也可以减少网络传输的数据量。但是，需要根据数据的读写模式选择合适的压缩算法。
-
-8. **调整Hive配置参数**:
-   根据具体的查询和数据特征，调整Hive的配置参数，如`hive.exec.reducers.bytes.per.reducer`、`hive.exec.reducers.max`等，可以优化执行计划。
-
-9. **使用窗口函数**:
-   对于某些类型的分析，使用窗口函数而不是自连接可以大幅提高性能。
-
-10. **减少数据倾斜**:
-    数据倾斜可能会导致某些节点处理的数据量远大于其他节点。可以使用`distribute by`语句来手动控制数据的分布，减少数据倾斜的问题。
-
-11. **向量化查询执行**:
-    启用向量化查询执行可以大幅提高性能，因为它使用批处理来处理数据，减少了CPU的使用。
-
-12. **预先计算和聚合**:
-    对于一些重复的计算，可以预先计算并存储结果，以便查询时直接使用。
-
-13. **避免笛卡尔积**:
-    如果不是必须的，应该避免在查询中使用笛卡尔积，因为它会产生大量的数据组合，严重影响查询性能。
-
-14. **分析和收集表统计信息**:
-    使用`ANALYZE TABLE`命令来收集表的统计信息，这些信息可以帮助Hive优化器生成更优的执行计划。
-
-手动优化Hive查询是一个复杂的过程，需要根据具体的数据特点和查询需求来进行。以上提到的一些技巧可以作为高级优化的起点。在实际操作中，可能还需要结合具体的业务逻辑和数据特性进行细致的调整。
 
 
 
@@ -211,6 +293,41 @@ Hive查询的手动优化通常涉及对查询本身、数据模型和Hive配置
    - 支持 ACID 事务表的向后兼容性和更好的性能。
 
 这只是一些主要版本的特性摘要，每个版本都有更多的改进和增强功能。如果您需要详细了解每个版本的特性和改进，请参阅 Apache Hive 的官方文档和发布说明。
+
+# hive对比即席查询框架
+
+
+
+Impala和Druid都是为了提供快速的即席查询（ad-hoc query）而设计的分布式存储和查询系统。它们之所以适合即席查询，主要是因为它们的架构和查询执行方式与传统的MapReduce模式有所不同。
+
+Impala
+
+Impala是一个开源的大数据查询工具，由Cloudera开发，它直接在Hadoop的存储文件（如HDFS和HBase）上运行SQL查询。Impala是为了克服Hive在即席查询上的性能瓶颈而设计的。它使用了类似于传统关系数据库的MPP（Massive Parallel Processing）架构，可以并行地在多个节点上执行查询，从而大大加快了查询速度。
+
+Impala不使用MapReduce执行模型，而是使用自己的分布式查询引擎，这允许它在不需要启动MapReduce作业的情况下直接处理数据，从而减少了延迟。
+
+Druid
+
+Druid是一个为了实时分析而构建的高性能的分析型数据库。它专门用于事件驱动的数据或时间序列数据的快速聚合查询。Druid的设计重点在于提供快速的查询性能和实时数据摄入，使之非常适合于大规模的即席分析查询。
+
+Druid通过将数据分布存储在一个由多个节点组成的集群中，并且能够在这些节点上并行处理查询，来实现高速查询。Druid还采用了列式存储格式，这样可以高效地进行数据压缩和快速的聚合操作。
+
+Hive on Spark
+
+Hive是一个建立在Hadoop上的数据仓库工具，它最初是使用MapReduce作为其后端执行引擎。随着Spark的出现，Hive可以使用Spark作为计算引擎，而Spark是一个更快的内存计算框架，它比MapReduce有更好的性能，特别是在处理机器学习和迭代算法时。
+
+尽管Hive on Spark的性能有所提升，但是它通常仍然不如专门为即席查询优化的系统如Impala或Druid那样快。Hive的设计更注重于批量处理和兼容性，而不是即席查询的低延迟。
+
+为什么还使用Hive？
+
+尽管Impala和Druid在查询性能上有优势，但Hive仍然被广泛使用，原因包括：
+
+1. **成熟度和稳定性**：Hive是一个非常成熟的项目，拥有大量的用户和社区支持。企业通常倾向于使用成熟的技术。
+2. **兼容性**：Hive提供了与SQL标准的良好兼容性，这使得它能够更容易地集成到现有的数据仓库解决方案中。
+3. **生态系统**：Hive是Hadoop生态系统的一部分，与其他工具（如Pig、Oozie等）集成良好。
+4. **多引擎支持**：Hive可以使用不同的执行引擎（如MapReduce、Tez、Spark），为不同的用例提供灵活性。
+
+总结来说，选择Impala、Druid还是Hive on Spark，取决于具体的使用场景、数据特性、性能需求以及与现有系统的兼容性。在某些情况下，组织可能会同时使用这些工具，以便在不同的场景下优化性能和资源利用。
 
 
 
@@ -349,40 +466,415 @@ spark.driver.memory             1g
 
 
 
-# hive对比即席查询框架
+
+
+# hive on spark调优
+
+### 调yarn参数
+
+```sql
+#yarn.nodemanger.resource.memory-mb
+这个是nodemanger最多能给container使用的内存，woker服务器节点是128G,给kafka 10-15g,给datanode 5G,还有zk,hbase等。
+设置64G就行
+
+#yarn.nodemanager.resource.cpu-vcores
+设置nodemanger可使用的虚拟cpu核数。虚拟cpu数意思，你可以比物理核数多，这样会给yarn更多的cpu抢占资源
+服务器是32核，那么不应全给nodemanager，你还有其他线程，如果全给yarn,那么导致其他线程被yarn争抢导致其他线程效率低。
+设置为16核。一般都是内存和核数是4:1的关系
+
+"cpu-vcores案例"
+如果我yarn只设置1cpu可用核数，我同时提交8个yarn任务。
+即使你只配置了 1 个虚拟 CPU 核心，YARN 通常也会启动多个 Container。这是因为 YARN 中的 CPU 资源是可以被超额订阅的（over-subscribed），它们都试图在同一时刻运行增强cpu使用
+
+
+重点配置
+#yarn.scheduler.maxumum-allocation-mb /minumum
+每个申请container最大是多少,最小是多少，最大是16g,最小是512m
+在spark-yarn模式下,driver和excutor是在container运行的，所以container最大的设置，一定要比spark里的driver和container设置最大内存要大
+
+```
 
 
 
-Impala和Druid都是为了提供快速的即席查询（ad-hoc query）而设计的分布式存储和查询系统。它们之所以适合即席查询，主要是因为它们的架构和查询执行方式与传统的MapReduce模式有所不同。
+### 调spark参数(p7笔记待做)
 
-Impala
+```sql
+#excutor相关
+#spark.excutor.cores
+一个excutor能用多少个核，决定了一个excutor能同时并行的task数量。建议4-6
+一个excutor是一个jvm进程，多个task是共享一个excutor堆内存的。
+前面yarn的配置的是单节点16核,那么这里配置为16的整除比较合适,如4。如果设置5，那么只能开启3个excutor还有一个核未使用
 
-Impala是一个开源的大数据查询工具，由Cloudera开发，它直接在Hadoop的存储文件（如HDFS和HBase）上运行SQL查询。Impala是为了克服Hive在即席查询上的性能瓶颈而设计的。它使用了类似于传统关系数据库的MPP（Massive Parallel Processing）架构，可以并行地在多个节点上执行查询，从而大大加快了查询速度。
+#excutor总内存
+excutor运行在container里面，每个container对应一个excutor
+excutor内存  =  overhead + excution&storage  2部分  
+spark.executor.mermoryOverhead 堆外内存 ,jvm的额外开销，操作系统开销。默认比例excutor总内存的o.1
+spark.executor.mermory 堆内存，计算和存储的内存  占总的0.9
 
-Impala不使用MapReduce执行模型，而是使用自己的分布式查询引擎，这允许它在不需要启动MapReduce作业的情况下直接处理数据，从而减少了延迟。
+每个excutor总内存设置为:yarn内占用的总内存/yarn能最大提供的container数，并且要小于yarn的最大container大小。
+参数表里没有总内存这项，所以分别设置spark.executor.mermoryOverhead和spark.executor.mermory
 
-Druid
+#每个应用excutor个数配置
 
-Druid是一个为了实时分析而构建的高性能的分析型数据库。它专门用于事件驱动的数据或时间序列数据的快速聚合查询。Druid的设计重点在于提供快速的查询性能和实时数据摄入，使之非常适合于大规模的即席分析查询。
+"静态分配"
+每个spark应用提交时，手动指定通过spark.excutor.instances 执行excutor数
 
-Druid通过将数据分布存储在一个由多个节点组成的集群中，并且能够在这些节点上并行处理查询，来实现高速查询。Druid还采用了列式存储格式，这样可以高效地进行数据压缩和快速的聚合操作。
 
-Hive on Spark
+"动态分配" 
+动态分配spark自动分配
+spark.dynamicAllocation.schedulerBacklogTimeout  5s 
+若有task任务，超过这个时间还未分配，就继续开启新的excutor，当设置为5s,可以理解成只要有task未分配，就开新的excutor
 
-Hive是一个建立在Hadoop上的数据仓库工具，它最初是使用MapReduce作为其后端执行引擎。随着Spark的出现，Hive可以使用Spark作为计算引擎，而Spark是一个更快的内存计算框架，它比MapReduce有更好的性能，特别是在处理机器学习和迭代算法时。
+#driver相关 
+spark.driver.memory        堆内存 0.9
+spark.driver.memoryOverhead  堆外内存 0.1
+官网推荐:如果yarn.naodemanager.resource.memor-mb(nodeg给所有container最多内存)这个参数为x,
+如果x>50 则 driver为12g
+如果12<x<50 则 driver为4g
+如果x<12 则 driver为1g
 
-尽管Hive on Spark的性能有所提升，但是它通常仍然不如专门为即席查询优化的系统如Impala或Druid那样快。Hive的设计更注重于批量处理和兼容性，而不是即席查询的低延迟。
+#配置操作
+这些配置参数，都是修改hive的conf目录下的,spark-defaults.conf
 
-为什么还使用Hive？
+至于开启spark-shuffle服务，需要到yarn里配置，去开启sparkshuffle。因为不是运行spark集群，spark配置了没用。hive也无法开启这个服务，具体看p9
 
-尽管Impala和Druid在查询性能上有优势，但Hive仍然被广泛使用，原因包括：
+#shuffle服务
+当一个excutor执行完毕后要进行shuffle时,输出的数据统一shuffle服务管理，这样就可以提前关闭excutor了
 
-1. **成熟度和稳定性**：Hive是一个非常成熟的项目，拥有大量的用户和社区支持。企业通常倾向于使用成熟的技术。
-2. **兼容性**：Hive提供了与SQL标准的良好兼容性，这使得它能够更容易地集成到现有的数据仓库解决方案中。
-3. **生态系统**：Hive是Hadoop生态系统的一部分，与其他工具（如Pig、Oozie等）集成良好。
-4. **多引擎支持**：Hive可以使用不同的执行引擎（如MapReduce、Tez、Spark），为不同的用例提供灵活性。
+```
 
-总结来说，选择Impala、Druid还是Hive on Spark，取决于具体的使用场景、数据特性、性能需求以及与现有系统的兼容性。在某些情况下，组织可能会同时使用这些工具，以便在不同的场景下优化性能和资源利用。
+
+
+### hql调优
+
+```mysql
+先查看表数据规模，再调优。用describe formatted
+
+#group by 开启预聚合(默认是开启的)
+select name,count(*) from tb group by name;
+开启map端聚合,减少shuffle量
+开启预聚合后，执行计划对比
+未开启: map[  tbscan->select->reduce output ]
+开启后: map[  tbscan->select->group by ->reduce output ]
+细节:开启预聚合后，第一个group by的mode是hash，第二个group by的mode是 aggregate trail，和之前的模式不同了
+
+开启流程:   
+set hive.map.aggr=true  开启预聚合
+set hive.map.aggr.hash.percentmermory =0.5  开启map聚合是要额外费内存的,将聚合结果维护在map任务中的一个hash-table，这个参数是设置hash-table能占多大内存
+
+#join
+目前的join算法,common join ,map join ,bucket map join
+
+common join 根据关联字段进行分区,发送到reducer，由reducer完成关联
+
+#map join
+map join（大表join小表）  若参与join的n个表中,有n-1个表足够小，那么map会把小表全部缓存，然后找出一个最大的表，对最大的表进行扫描关联小表，在map端进行join。
+流程就是:将多个小表加载成hash-table，然后序列化后放入hdfs临时文件，然后多个map任务去hdfs拉取这个hash-table,本地执行mapjoin 
+map join没有shuffle，所以就变快多了
+
+
+开启流程:
+set hive.auto.convert.join = true;
+前面设置单个excutor分的是12G内存,4个核,也就是4个task每个最多能分3g内存，所以1.5g的维度表，可以开启mapjoin
+set hive auto.convert.join.noconditional.size = ;
+
+执行的sql是订单表关联订单表
+开启前：
+	只有一个stage：
+				map1执行tableScan->select->reduce output
+				map2执行tableScan->select->reduce output
+				reducer执行 join ->select ->file output
+	
+
+开启map后: 
+		stage1: 小表tableScan -> select->spark hashTable sink
+		stage2: 大表tablescan->select->map jpon -> select ->file output
+
+
+
+#bucket map join (不常用，条件苛刻)
+bucket map join(因为map join只能大join小，为了解决这个情况，有这个设计):
+条件是2个表都是分桶表，然后关联字段是分桶字段，并且大表分桶数是小表的整数倍，这时就能实现优化.
+因为当2个表都大的时候,不能小表加载到内存，当分桶后，小表只加载用到的桶的数据，桶的数据够小的时候，所以就可能完成map join
+
+
+#数据倾斜
+
+#group by导致的
+思路1:开启map预聚合,map端聚合
+思路2:group by字段，加随机数+｜,然后按｜切分。执行2次的mr的groupby  
+思路3: set hive.groupby.skewindata=true 这个参数，原理和第一种差不多，不过实现方式有区别。第一次按随机数分区，进入reduce进行一部分聚合，然后再按mr聚合一次。和第一种的区别就是第一种更费内存，而这个不吃内存。
+
+第一次group by后,再接一个group by 。如果是mr引擎，第一次的reduce必须落盘，然后第二个map再读取。是2个stage
+但是spark中,mr之后，可以直接shuffle到下一个reduce，不用再一个map。是一个stage连续接2个reduce
+
+#join导致的
+思路1 mapjoin解决,加载小表。
+  这种应该能解决9层，因为数据倾斜的话，关联key一般都是维度key，维度表都很小。如果是2个大表关联，key基本都是散列的,很难出现数据倾	 斜，场景目前想不到。
+
+思路2 skew join (原理p23挺复杂的)
+set hive.optimize.skewjoin =true 开启。
+set hive.skewjoin.key = 10000，当某个key数量超过多少，触发。
+注意只支持inner join 
+
+#并行度优化
+
+#map并行度(一般不用动)
+set  hive.input.format= 前缀省略.CombineInput   设置读取方式，默认是combine
+set mapreduce.input.fileinputformat.split.maxsize = 25600000   设置合并文件大小
+
+#reduce并行度
+
+set mapreduce.job.reduces = 2  手动指定reduces个数，默认是-1为制定
+set hive.exec.reducers.max = 10 这个是限定hive估算任务的最大限制,自己手动指定的不受这个限制
+set hive.exec.reducers.bytes.per.reducer = 100*1024*1024 100M 如果未手动指定,hive根据数据量手动估算
+
+hive估算的规则是  totalBytes/per.reducer 来启动reduce数。
+而这个totalBytes是hive估算会产生很大误差的原因。hive获取totalBytes是根据执行计划中上一阶段的reduce output数据量来的，
+看执行计划时可以看到。当你进行了map join时，这个误差会很大。
+另一种场景: 你数据量很大，但是你的groupby的key只有4个。因为数据量大所以导致hive判定启动reduce的个数很多，但是你的key只有4个，导致其他的reduce都收不到数据，都是白启动的。
+
+下面这4个参数，为了加强hive计算reduce个数准确
+set hive.stats.autogather =true 当hive执行DML语句时，收集表级别的统计信息，放入表的元数据
+set hive.stats.column.autogater =true 执DML时，收集字段之别信息
+set spark.use.op.stats =true ; spark计算reduce并行度时，从上游orperator统计信息获取输入数据量
+set hive.stats.fetch.colum.stats=true  计算reduce并行度时，根据列信息计算reduce数
+
+#小文件合并优化
+map输入端文件合并，默认的就是combine，不用管
+
+reduce输出文件合并
+set hive.merge.sparkfiles =true (默认是不开启的)，执行reducer还是多并行度，然后多了一个stage，进行小文件合并。
+这个和skewjoin相同，是执行时根据数据量，动态判断是否增加一个合并阶段的，如果有小文件，则才会触发
+
+
+```
+
+
+
+# hive优化
+
+#### 数据倾斜
+
+```mysql
+#group by,聚合字段是城市
+
+#join场景,关联键位是城市
+比如业务表join维度表，关联键位是城市id。
+这种情况下主业务城市会数据倾斜，最好把维度表设置成map join，有时候维度表比较大，比默认值大，但是你的集群内存规模是可以容纳这个维度加载到内存的，可以手动临时指定维度表范围大小，来实现map join
+
+```
+
+#### 拉链表设计模式
+
+追踪数据每日变化的历史记录,感觉没必要,因为周期是一天，并不能精准到每次的变化，只能定位到天的变化
+
+#### parquet格式
+
+采用orc和parquet格式，第一个列存，最重要的是虽然是snappy压缩，但可切分，多并行度。
+
+如果你用textfile，并且执行压缩,并且是snappy压缩，只有一个任务。
+
+具体看:问题已解决中的压缩文件的mr并行度
+
+#### map join
+
+map join主要是在关联的时候使用，hive开启map join后可以将关联的小表放入[内存](https://so.csdn.net/so/search?q=内存&spm=1001.2101.3001.7020)中去执行，以此来提高脚本的运行速度
+
+开启map join
+
+set hive.auto.convert.join=true;
+
+设置map join 启动时表的大小最大为1M
+set hive.mapjoin.smalltable.filesize=1048576;
+
+
+
+map join的一点小坑
+
+map join虽然很好，但是会有如下问题：
+
+1）map join关联多个小表时，都放入内存，则考虑内存大小需要针对上述小表大小进行累加
+
+2）大表B表map join关联分区小表A表（200M）时，即使限制了A的分区（取10M），但依旧放入内存的大小依旧是A表的原先大小（200M）
+
+#### 先过滤再关联
+
+对于一些join的操作 先过滤再去关联，不要先关联再过滤，每个join都是开启一次mr，先过滤减少传输数据
+
+
+
+#### 开启map端聚合
+
+对于一些聚合函数比如 sum(),count() 这种，是可以提前在map端预聚合的。
+
+比如按性别group by ，那么最后最多只有2个reduce任务，有10个map任务，在map端先聚合的话，会提升很多速度，而且传递的数据也少了很多。
+
+
+
+并不是所有情况都是开启map聚合就是好
+
+比如按用户id 去统计订单数，因为用户id少会出现多条重复订单，如果这时候开启map聚合，在map端聚合一次之后，数据量基本无变化，然后传递到reduce端，还要再聚合一次，反而更慢了，所以对于这种情况反而要关闭map聚合，用参数设置自动开关
+
+
+
+开启map端口预聚合
+set hive.map.aggr = true
+
+map端会预先聚合10000条数据
+set hive.groupby.mapaggr.checkinterval = 10000
+
+map端试聚合10000得到的数量与10000的比值，如果比值<0.3 则有继续聚合，如果大于0.3没有预聚合的意义，会关闭预聚合
+
+Hive.map.aggr.hash.min.reduction=0.3
+
+
+
+#### 合理设置map,reduce数量
+
+是不是map数越多越好？
+
+答案是否定的。如果一个任务有很多小文件（远远小于块大小128m），则每个小文件也会被当做一个块，用一个map任务来完成，而一个map任务启动和初始化的时间远远大于逻辑处理的时间，就会造成很大的资源浪费。而且，同时可执行的map数是受限的。
+
+是不是保证每个map处理接近128m的文件块，就高枕无忧了？
+
+答案也是不一定。比如有一个127m的文件，正常会用一个map去完成，但这个文件只有一个或者两个小字段，却有几千万的记录，如果map处理的逻辑比较复杂，用一个map任务去做，肯定也比较耗时。
+
+#### 合并小文件
+
+（1）在map执行前合并小文件，减少map数：CombineHiveInputFormat具有对小文件进行合并的功能（系统默认的格式）。HiveInputFormat没有对小文件合并功能。
+
+set hive.input.format= org.apache.hadoop.hive.ql.io.CombineHiveInputFormat;
+
+（2）在Map-Reduce的任务结束时合并小文件的设置：
+
+在map-only任务结束时合并小文件，默认true
+
+SET hive.merge.mapfiles = true;
+
+在map-reduce任务结束时合并小文件，默认false
+
+SET hive.merge.mapredfiles = true;
+
+合并文件的大小，默认256M
+
+SET hive.merge.size.per.task = 268435456;
+
+当输出文件的平均大小小于该值时，启动一个独立的map-reduce任务进行文件merge
+
+SET hive.merge.smallfiles.avgsize = 16777216;
+
+（1）在map执行前合并小文件，减少map数：CombineHiveInputFormat具有对小文件进行合并的功能（系统默认的格式）。HiveInputFormat没有对小文件合并功能。
+
+set hive.input.format= org.apache.hadoop.hive.ql.io.CombineHiveInputFormat;
+
+（2）在Map-Reduce的任务结束时合并小文件的设置：
+
+在map-only任务结束时合并小文件，默认true
+
+SET hive.merge.mapfiles = true;
+
+在map-reduce任务结束时合并小文件，默认false
+
+SET hive.merge.mapredfiles = true;
+
+合并文件的大小，默认256M
+
+SET hive.merge.size.per.task = 268435456;
+
+当输出文件的平均大小小于该值时，启动一个独立的map-reduce任务进行文件merge
+
+SET hive.merge.smallfiles.avgsize = 16777216;
+
+
+
+#### 合理设置reduce个数
+
+调整reduce个数方法一
+
+（1）每个Reduce处理的数据量默认是256MB
+
+hive.exec.reducers.bytes.per.reducer=256000000
+
+（2）每个任务最大的reduce数，默认为1009
+
+hive.exec.reducers.max=1009
+
+（3）计算reducer数的公式
+
+N=min(参数2，总输入数据量/参数1)
+
+2．调整reduce个数方法二
+
+在hadoop的mapred-default.xml文件中修改
+
+设置每个job的Reduce个数
+
+set mapreduce.job.reduces = 15;
+
+3．reduce个数并不是越多越好
+
+1）过多的启动和初始化reduce也会消耗时间和资源；
+
+2）另外，有多少个reduce，就会有多少个输出文件，如果生成了很多个小文件，那么如果这些小文件作为下一个任务的输入，则也会出现小文件过多的问题；
+
+在设置reduce个数的时候也需要考虑这两个原则：处理大数据量利用合适的reduce数；使单个reduce任务处理数据量大小要合适；
+
+#### jvm重用
+
+JVM重用是Hadoop调优参数的内容，其对Hive的性能具有非常大的影响，特别是对于很难避免小文件的场景或task特别多的场景，这类场景大多数执行时间都很短。
+
+Hadoop的默认配置通常是使用派生JVM来执行map和Reduce任务的。这时JVM的启动过程可能会造成相当大的开销，尤其是执行的job包含有成百上千task任务的情况。JVM重用可以使得JVM实例在同一个job中重新使用N次。N的值可以在Hadoop的mapred-site.xml文件中进行配置。通常在10-20之间，具体多少需要根据具体业务场景测试得出。
+
+这个功能的缺点是，开启JVM重用将一直占用使用到的task插槽，以便进行重用，直到任务完成后才能释放。如果某个“不平衡的”job中有某几个reduce task执行的时间要比其他Reduce task消耗的时间多的多的话，那么保留的插槽就会一直空闲着却无法被其他的job使用，直到所有的task都结束了才会释放。
+
+# gpt推荐的优化
+
+Hive查询的手动优化通常涉及对查询本身、数据模型和Hive配置的深入理解。这里有一些高级的优化技巧，这些技巧超出了Hive优化器（如CBO，代价基优化器）的自动优化范围：
+
+1. **分区和分桶**:
+   分区可以帮助Hive查询只扫描包含相关数据的子集，而分桶可以提供更细粒度的数据组织方式。正确使用分区和分桶可以显著提高查询性能。
+
+2. **合并小文件**:
+   如果数据由许多小文件组成，可能会导致大量的HDFS读取开销。可以使用`ALTER TABLE CONCATENATE`命令或者设置`hive.merge.mapfiles`和`hive.merge.mapredfiles`为`true`来合并这些小文件。
+
+3. **物化视图**:
+   物化视图存储查询结果，当对相同的数据执行多次查询时，可以直接从物化视图获取结果，而不是重新计算。在Hive中，可以创建物化视图来优化经常执行的复杂查询。
+
+4. **选择合适的文件格式**:
+   根据查询的性质，选择合适的文件格式（如Parquet, ORC等）可以提高性能。列式存储格式特别适合于执行大量的聚合操作。
+
+5. **使用Hive变量**:
+   可以使用Hive变量来动态调整查询，这样就可以重用查询模板，避免为不同的查询场景编写多个查询语句。
+
+6. **调整JOIN策略**:
+   Hive支持几种不同的JOIN策略，如MapJoin, SMBJoin等。在某些情况下，手动指定JOIN策略可以提高查询效率。
+
+7. **使用合适的压缩**:
+   启用压缩可以减少存储空间的使用，同时也可以减少网络传输的数据量。但是，需要根据数据的读写模式选择合适的压缩算法。
+
+8. **调整Hive配置参数**:
+   根据具体的查询和数据特征，调整Hive的配置参数，如`hive.exec.reducers.bytes.per.reducer`、`hive.exec.reducers.max`等，可以优化执行计划。
+
+9. **使用窗口函数**:
+   对于某些类型的分析，使用窗口函数而不是自连接可以大幅提高性能。
+
+10. **减少数据倾斜**:
+    数据倾斜可能会导致某些节点处理的数据量远大于其他节点。可以使用`distribute by`语句来手动控制数据的分布，减少数据倾斜的问题。
+
+11. **向量化查询执行**:
+    启用向量化查询执行可以大幅提高性能，因为它使用批处理来处理数据，减少了CPU的使用。
+
+12. **预先计算和聚合**:
+    对于一些重复的计算，可以预先计算并存储结果，以便查询时直接使用。
+
+13. **避免笛卡尔积**:
+    如果不是必须的，应该避免在查询中使用笛卡尔积，因为它会产生大量的数据组合，严重影响查询性能。
+
+14. **分析和收集表统计信息**:
+    使用`ANALYZE TABLE`命令来收集表的统计信息，这些信息可以帮助Hive优化器生成更优的执行计划。
+
+手动优化Hive查询是一个复杂的过程，需要根据具体的数据特点和查询需求来进行。以上提到的一些技巧可以作为高级优化的起点。在实际操作中，可能还需要结合具体的业务逻辑和数据特性进行细致的调整。
 
 
 
@@ -564,22 +1056,32 @@ hive表表中load数据是直接把块记录更改，不会更改数据。如果
 
 #### 库表操作
 
-创建数据库  默认存储路径是   /user/hive/warehouse/*.db，可以指定位置
+```mysql
+创建数据库  默认存储路径是   /user/hive/warehouse/.db，可以指定位置
 
+#库相关
 show databases； 查看所有库
-
 use databases;  使用库
-
 drop database db_hive  ;删除数据库,空数据库
-
 drop database db_hive cascade;非空数据库加上cascade
-
 desc  database  db1 查看库信息
-
 desc database extended db1 查看库详细信息
-
+#表相关
 desc  tb1  查询表信息
 desc  formatted  tb1 查询表详细信息
+desc formatted  tb1 partition(dt="2020-06-01") 查看表某分区信息
+
+#desc  formatted tb
+可以查看hive表当前很多信息
+numFiles 表目前有多少个文件
+numrows  有多少行数据
+totalSize  所有文件总和的大小
+rowDataSize 当你文件采用压缩，解压后数据总占用空间
+```
+
+
+
+
 
 #### 建库语句
 
@@ -673,23 +1175,11 @@ textFile：
         缺点：存储空间占用较大，I/O性能低；不可对数据进行切割、合并，不能进行并行操作；
         适用于小型查询，测试操作等。
 
-sequqnceFile：
-        键值对形式存储的二进制文本格式，行存储。
-        优点：可压缩、可分割。优化I/O性能；可并行操作；
-        缺点：存储空间占用最大，只局限于hadoop生态使用；
-        适用于小数据，大部分都是列查询的操作。
 
-RCFile：
-        行列式存储。先将数据按行分块，每一个块数据转换成一个Record对象，避免读取一条数据需要读取多个block；然后块数据按列存储。
-        优点：可压缩，高效的列存储，查询速度较快；
-        缺点：加载时性能消耗较大，全量数据读取时性能较低。
+ORCFile：当初为hive设计的，于paruqet都是列存，都采用了默认的压缩和编码技术，减少存储空间和读取效率。
+				orc默认采用zlib压缩
 
-ORCFile：
-        优化后的RCFile，优缺点与RCFile类似，查询效率最高。
-        适用于hive中、大型的存储和查询。
-
-Parquet：
-        列存储。
+Parquet：于orc都是列存，都采用了默认的压缩和编码技术，减少存储空间和读取效率。默认是snappy压缩
         优点：更高效的压缩和编码；不与任何数据处理技术绑定，可用于多种数据处理框架。
         缺点：不支持update，insert，delete，ACID
         适用于字段非常多，无更新，只读取部分列数据。
@@ -1066,8 +1556,13 @@ sql : select * from tmp  where id in (select id from tmp_copy) as t2;
 
 ##### 案例1解析
 
-```
+```mysql
 这段HQL的执行计划描述了一个Hive查询的执行过程，分为三个阶段（Stage-4、Stage-3、Stage-0）。下面对每个阶段的执行计划进行解读：
+
+#个人总结
+一个map-reduce是一个stage
+最后一个stage，如果是select语句，那么就是先写入hdfs临时文件,然后fetch读取，展示在hive客户端
+
 
 **Stage-4**：
 - 这是一个根阶段，没有依赖其他阶段。
@@ -1378,159 +1873,6 @@ join  tmp on t1.id = tmp.superid
 ```
 
 
-
-# hive优化
-
-#### map join
-
-map join主要是在关联的时候使用，hive开启map join后可以将关联的小表放入[内存](https://so.csdn.net/so/search?q=内存&spm=1001.2101.3001.7020)中去执行，以此来提高脚本的运行速度
-
-开启map join
-
-set hive.auto.convert.join=true;
-
-设置map join 启动时表的大小最大为1M
-set hive.mapjoin.smalltable.filesize=1048576;
-
-
-
-map join的一点小坑
-
-map join虽然很好，但是会有如下问题：
-
-1）map join关联多个小表时，都放入内存，则考虑内存大小需要针对上述小表大小进行累加
-
-2）大表B表map join关联分区小表A表（200M）时，即使限制了A的分区（取10M），但依旧放入内存的大小依旧是A表的原先大小（200M）
-
-#### 先过滤再关联
-
-对于一些join的操作 先过滤再去关联，不要先关联再过滤，每个join都是开启一次mr，先过滤减少传输数据
-
-
-
-#### 开启map端聚合
-
-对于一些聚合函数比如 sum(),count() 这种，是可以提前在map端预聚合的。
-
-比如按性别group by ，那么最后最多只有2个reduce任务，有10个map任务，在map端先聚合的话，会提升很多速度，而且传递的数据也少了很多。
-
-
-
-并不是所有情况都是开启map聚合就是好
-
-比如按用户id 去统计订单数，因为用户id少会出现多条重复订单，如果这时候开启map聚合，在map端聚合一次之后，数据量基本无变化，然后传递到reduce端，还要再聚合一次，反而更慢了，所以对于这种情况反而要关闭map聚合，用参数设置自动开关
-
-
-
-开启map端口预聚合
-set hive.map.aggr = true
-
-map端会预先聚合10000条数据
-set hive.groupby.mapaggr.checkinterval = 10000
-
-map端试聚合10000得到的数量与10000的比值，如果比值<0.3 则有继续聚合，如果大于0.3没有预聚合的意义，会关闭预聚合
-
-Hive.map.aggr.hash.min.reduction=0.3
-
-
-
-#### 合理设置map,reduce数量
-
-是不是map数越多越好？
-
-答案是否定的。如果一个任务有很多小文件（远远小于块大小128m），则每个小文件也会被当做一个块，用一个map任务来完成，而一个map任务启动和初始化的时间远远大于逻辑处理的时间，就会造成很大的资源浪费。而且，同时可执行的map数是受限的。
-
-是不是保证每个map处理接近128m的文件块，就高枕无忧了？
-
-答案也是不一定。比如有一个127m的文件，正常会用一个map去完成，但这个文件只有一个或者两个小字段，却有几千万的记录，如果map处理的逻辑比较复杂，用一个map任务去做，肯定也比较耗时。
-
-#### 合并小文件
-
-（1）在map执行前合并小文件，减少map数：CombineHiveInputFormat具有对小文件进行合并的功能（系统默认的格式）。HiveInputFormat没有对小文件合并功能。
-
-set hive.input.format= org.apache.hadoop.hive.ql.io.CombineHiveInputFormat;
-
-（2）在Map-Reduce的任务结束时合并小文件的设置：
-
-在map-only任务结束时合并小文件，默认true
-
-SET hive.merge.mapfiles = true;
-
-在map-reduce任务结束时合并小文件，默认false
-
-SET hive.merge.mapredfiles = true;
-
-合并文件的大小，默认256M
-
-SET hive.merge.size.per.task = 268435456;
-
-当输出文件的平均大小小于该值时，启动一个独立的map-reduce任务进行文件merge
-
-SET hive.merge.smallfiles.avgsize = 16777216;
-
-（1）在map执行前合并小文件，减少map数：CombineHiveInputFormat具有对小文件进行合并的功能（系统默认的格式）。HiveInputFormat没有对小文件合并功能。
-
-set hive.input.format= org.apache.hadoop.hive.ql.io.CombineHiveInputFormat;
-
-（2）在Map-Reduce的任务结束时合并小文件的设置：
-
-在map-only任务结束时合并小文件，默认true
-
-SET hive.merge.mapfiles = true;
-
-在map-reduce任务结束时合并小文件，默认false
-
-SET hive.merge.mapredfiles = true;
-
-合并文件的大小，默认256M
-
-SET hive.merge.size.per.task = 268435456;
-
-当输出文件的平均大小小于该值时，启动一个独立的map-reduce任务进行文件merge
-
-SET hive.merge.smallfiles.avgsize = 16777216;
-
-
-
-#### 合理设置reduce个数
-
-调整reduce个数方法一
-
-（1）每个Reduce处理的数据量默认是256MB
-
-hive.exec.reducers.bytes.per.reducer=256000000
-
-（2）每个任务最大的reduce数，默认为1009
-
-hive.exec.reducers.max=1009
-
-（3）计算reducer数的公式
-
-N=min(参数2，总输入数据量/参数1)
-
-2．调整reduce个数方法二
-
-在hadoop的mapred-default.xml文件中修改
-
-设置每个job的Reduce个数
-
-set mapreduce.job.reduces = 15;
-
-3．reduce个数并不是越多越好
-
-1）过多的启动和初始化reduce也会消耗时间和资源；
-
-2）另外，有多少个reduce，就会有多少个输出文件，如果生成了很多个小文件，那么如果这些小文件作为下一个任务的输入，则也会出现小文件过多的问题；
-
-在设置reduce个数的时候也需要考虑这两个原则：处理大数据量利用合适的reduce数；使单个reduce任务处理数据量大小要合适；
-
-#### jvm重用
-
-JVM重用是Hadoop调优参数的内容，其对Hive的性能具有非常大的影响，特别是对于很难避免小文件的场景或task特别多的场景，这类场景大多数执行时间都很短。
-
-Hadoop的默认配置通常是使用派生JVM来执行map和Reduce任务的。这时JVM的启动过程可能会造成相当大的开销，尤其是执行的job包含有成百上千task任务的情况。JVM重用可以使得JVM实例在同一个job中重新使用N次。N的值可以在Hadoop的mapred-site.xml文件中进行配置。通常在10-20之间，具体多少需要根据具体业务场景测试得出。
-
-这个功能的缺点是，开启JVM重用将一直占用使用到的task插槽，以便进行重用，直到任务完成后才能释放。如果某个“不平衡的”job中有某几个reduce task执行的时间要比其他Reduce task消耗的时间多的多的话，那么保留的插槽就会一直空闲着却无法被其他的job使用，直到所有的task都结束了才会释放。
 
 
 

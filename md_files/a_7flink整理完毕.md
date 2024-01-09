@@ -385,8 +385,12 @@ yarn-session模式下，启动时设置4个taskmanager,每个4个插槽，共16�
 如果某个算子工作量大，可以不设置slot共享，这样那个算子会单独占用一个slot。
 
 #注意
-虽然多个slot是一个taskmanager的jvm下，但是slot不共享内存，2个算子还是要序列化和反序列化。
-可以理解成每个slot是单独的程序，只是在同一个jvm下运行
+虽然多个slot是一个taskmanager的jvm下,虽然多个slot共享内存，2个算子还是要序列化和反序列化。
+可以理解成每个slot是单独的程序，只是在同一个jvm下运行。
+
+个人理解是flink拆解任务时，不能根据你slot的上下游是否在一个taskmanager中，来优化不用序列化
+
+因为有的是不在一个taskmanager中的，必须序列化，为了统一只能统一都序列化
 
 #案例
 yarn-session模式下，启动时设置4个taskmanager,每个4个插槽，共16个slot。你占用15个，剩下一个还是可以提交flink任务的。

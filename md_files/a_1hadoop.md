@@ -4,31 +4,7 @@
 
 课程到99p ,跳到125开始看
 
-# hadoop论文
 
-gfs 分布式系统文件论文
-
-https://static.googleusercontent.com/media/research.google.com/zh-CN//archive/gfs-sosp2003.pdf
-
-bigtable大表论文(hbase理论基础)
-
-https://arthurchiao.art/blog/google-bigtable-zh/
-
-https://static.googleusercontent.com/media/research.google.com/zh-CN//archive/bigtable-osdi06.pdf
-
-
-
-mapreduce论文
-
-https://static.googleusercontent.com/media/research.google.com/zh-CN//archive/mapreduce-osdi04.pdf
-
-# hdfs和amason s3区别
-
-https://blog.csdn.net/zhang9880000/article/details/132522281
-
-为什么s3是低费用存储，他是根据实际用量收费的，
-
-hdfs 如果数据少了也要安装那么多服务器
 
 
 
@@ -54,7 +30,7 @@ hdfs 如果数据少了也要安装那么多服务器
 
 5 把project3的datanode 进程kill掉之后，9870界面还是显示3个可用，好奇怪
 
-# 问题已解决
+# 问题已解决(待回顾)
 
 ### 文件集中同节点
 
@@ -64,36 +40,72 @@ hdfs 如果数据少了也要安装那么多服务器
 
 ### mr必排序原因
 
- map到reduce的数据，肯定会执行一次排序操作，如果我的sql ，只是sum group by ，那么排序操作就是没意义的，应该有不排序的方法。
+错误理解: 有的sql,不需要排序，reduce排序浪费性能。例如count(*) group by
 
-理解错误，说的排序操作是对相同分区的不同key排序，保证同key之间是连续的，这样方便获取iterator，而不是对key中的v排序
+排序操作是对相同reduce的不同key排序，保证同key之间是连续的，是一种优化，知道检测到key变化了，就说明你group by的字段，结束了。因此必须排序
 
-### mr代码序列化报错
+### 进行shuffle的sql任务
 
-序列化serialize里面代码问题找到了，序列化出问题了，user  = dataInput.readUTF();  上面传的是dataOutput.writeBytes(user) 
+orderby , group by , join , 开窗函数  这些，会走完整的mr任务，进行shuffle。
 
-应该用writeUTF
+如果只进行select查询，where过滤等查询，只走map，没有reduce任务。
+
+
+
+# 问题已理解(记录)
+
+```mysql
+
 
 ### Text放外面没问题
-
 视频的代码的Text是放在mapper任务外面的，这样不是公用一个吗？不会更改吗？
-
 在serilizable代码中的,HashMap已经确认是一个了。
-
-
-
 mapper任务把Text传给write(key,text),源码的实现类是复制一个value，而不是把Text直接放队列里,所以不会出问题
 
-```java
 private void writeToQueue(KEYOUT key, VALUEOUT value) throws IOException,
     InterruptedException {
   this.keyout = (KEYOUT) ReflectionUtils.newInstance(keyClass, conf);
   this.valueout = (VALUEOUT) ReflectionUtils.newInstance(valueClass, conf);
   ReflectionUtils.copy(conf, key, this.keyout);
   ReflectionUtils.copy(conf, value, this.valueout);
+
+
+### mr代码序列化报错
+序列化serialize里面代码问题找到了，序列化出问题了，user  = dataInput.readUTF();  上面传的dataOutput.writeBytes(user) 
+应该用writeUTF
 ```
 
 
+
+# 大数据生态了解
+
+### hadoop论文
+
+gfs 分布式系统文件论文
+
+https://static.googleusercontent.com/media/research.google.com/zh-CN//archive/gfs-sosp2003.pdf
+
+bigtable大表论文(hbase理论基础)
+
+https://arthurchiao.art/blog/google-bigtable-zh/
+
+https://static.googleusercontent.com/media/research.google.com/zh-CN//archive/bigtable-osdi06.pdf
+
+
+
+mapreduce论文
+
+https://static.googleusercontent.com/media/research.google.com/zh-CN//archive/mapreduce-osdi04.pdf
+
+### hdfs和amason s3区别
+
+https://blog.csdn.net/zhang9880000/article/details/132522281
+
+为什么s3是低费用存储，他是根据实际用量收费的，
+
+hdfs 如果数据少了也要安装那么多服务器
+
+### 数据湖
 
 
 
@@ -162,16 +174,6 @@ spark模式是集群，所以安装3份
 
 
 
-
-
-
-# yarn查看日志
-
-提交了个flink 3并行度的任务，代码中有打印操作，怎么找到各节点打印数据。
-
-打开project2:8088 => Applictions找到对应job点进去 => 找到第一列的AttemptID点进去 
-
-=> 看到4个任务(jobmanager,3taskmanager) => 最后一列Logs选一个进去 => 找到taskmanager.log 里面有打印数据
 
 
 
@@ -380,6 +382,34 @@ hadoop fs -getmerge    /hdfs/*   /local/a.txt  --从hdfs合并下载多个文件
 
 # hdfs
 
+### hdfs设计只支持追加
+
+```mysql
+Hadoop的HDFS（Hadoop Distributed File System）是为了适应大规模数据集的存储和处理而设计的。HDFS的设计有以下几个关键特性：
+
+1. **容错性**：通过数据的多副本存储，即使部分硬件故障，也能保证数据的可用性和完整性。
+2. **高吞吐量**：系统优化以支持大数据集的高速读写操作。
+3. **大文件优化**：HDFS被设计来存储非常大的文件，它支持的单个文件大小远远超过传统文件系统。
+4. **流式数据访问**：HDFS是为批处理而设计的，支持一次写入、多次读取的模式。
+
+HDFS的设计原则是“一次写入，多次读取”，这意味着一旦文件被创建和写入，就不能被修改，只能被追加和读取。这样的设计有几个目的：
+
+- **简化系统设计**：避免了文件被频繁修改带来的复杂性，如需要处理文件锁定、版本控制和并发修改等问题。
+- **优化写性能**：文件不可修改意味着写操作可以高效进行，因为系统不需要寻找文件中的特定位置进行数据插入或修改，只需将新数据追加到文件末尾。
+- **提高数据吞吐量**：HDFS的块结构设计使得可以在多个节点上并行写入和读取数据，从而提高了数据的处理速度。
+- **增强数据一致性**：不允许修改可以避免数据在多个副本之间的不一致性。
+- **减少元数据操作**：由于不需要频繁更新文件的元数据（如文件大小、修改时间等），减少了对NameNode的负担，提高了系统稳定性。
+
+然而，不支持文件修改和删除确实带来了一些限制，特别是在需要对存储在HDFS上的数据进行频繁更新的应用场景中。这就是为什么出现了如Apache Hudi和Apache Iceberg这样的框架，它们在HDFS之上提供了额外的数据管理功能：
+
+- **Apache Hudi**：提供了能够处理大规模数据集的近实时插入、更新和删除的能力。它提供了更复杂的数据索引、事务控制和回滚功能。
+- **Apache Iceberg**：是一个开源的表格式，用于改善大数据的存储、处理和分析。它提供了可扩展的表结构、隐藏的分区、原子性操作等特性。
+
+通过这些框架，用户可以在不牺牲原有HDFS优势的情况下，实现对数据的更新和删除操作，使得HDFS可以更好地适应更广泛的数据管理需求。
+```
+
+
+
 ### hdfs组成作用
 
 namenode : 存储文件元数据，文件名,目录结构，文件属性(生成时间,副本数,文件权限),块所在的datanode信息，处理读写请求
@@ -417,6 +447,90 @@ client(即hadoop指令): 上传文件时，client将文件切分，与nn交互�
 
 
 # yarn
+
+### yarn查看日志
+
+提交了个flink 3并行度的任务，代码中有打印操作，怎么找到各节点打印数据。
+
+打开project2:8088 => Applictions找到对应job点进去 => 找到第一列的AttemptID点进去 
+
+=> 看到4个任务(jobmanager,3taskmanager) => 最后一列Logs选一个进去 => 找到taskmanager.log 里面有打印数据
+
+
+
+
+
+### yarn配置参数
+
+```sql
+#yarn.nodemanger.resource.memory-mb
+这个是nodemanger最多能给container使用的内存，woker服务器节点是128G,给kafka 10-15g,给datanode 5G,还有zk,hbase等。
+设置64G就行
+
+#yarn.nodemanager.resource.cpu-vcores
+设置nodemanger可使用的虚拟cpu核数。虚拟cpu数意思，你可以比物理核数多，这样会给yarn更多的cpu抢占资源
+服务器是32核，那么不应全给nodemanager，你还有其他线程，如果全给yarn,那么导致其他线程被yarn争抢导致其他线程效率低。
+设置为16核。一般都是内存和核数是4:1的关系
+
+#cpu-vcores案例
+如果我yarn只设置1cpu可用核数，我同时提交8个yarn任务。
+即使你只配置了 1 个虚拟 CPU 核心，YARN 通常也会启动多个 Container。这是因为 YARN 中的 CPU 资源是可以被超额订阅的（over-subscribed），它们都试图在同一时刻运行增强cpu使用
+
+```
+
+
+
+### container申请大小
+
+```mysql
+在Hadoop中，YARN（Yet Another Resource Negotiator）是负责集群资源管理和作业调度的组件。当Hive执行一个MapReduce作业时，它会通过YARN来申请资源。YARN会根据多个参数来决定为每个Map任务分配多少资源，包括内存和CPU核心数。这些参数可以在YARN的配置文件中设置，如`yarn-site.xml`。
+
+具体到Map任务的内存分配，以下是一些关键的参数：
+
+1. **`mapreduce.map.memory.mb`**: 这个参数用于设置每个Map任务的内存大小。如果没有特别的设置，Map任务会使用这个默认值。
+
+2. **`yarn.scheduler.minimum-allocation-mb`**: 这是YARN中设置的每个容器可以申请的最小内存量。
+
+3. **`yarn.scheduler.maximum-allocation-mb`**: 这是YARN中设置的每个容器可以申请的最大内存量。
+
+4. **`mapreduce.map.java.opts`**: 这个参数用于控制Map任务JVM的堆大小（通过Java的-Xmx和-Xms参数）。通常这个值会小于`mapreduce.map.memory.mb`，因为`mapreduce.map.memory.mb`包括了JVM堆外内存的使用。
+
+当Hive执行MapReduce任务时，它会基于这些参数和作业的具体需求来请求资源。如果Hive表中的文件块大小为128MB，并不直接决定Map任务的内存分配。Map任务的内存分配主要取决于上面提到的参数设置。
+
+假设`mapreduce.map.memory.mb`被设置为1GB，而YARN的`yarn.scheduler.maximum-allocation-mb`被设置为10GB，那么即使单个Hive表的文件块只有128MB，每个Map任务也会请求1GB的内存，前提是没有其他任务级别的特定配置。
+
+在实际操作中，可能需要根据作业的需求和集群的资源情况来调整这些参数。如果Map任务处理的数据量很小，并且不需要很多内存，那么可以适当减小`mapreduce.map.memory.mb`的值，以节省资源并提高集群的利用率。反之，如果Map任务处理的数据量很大或者需要执行复杂的操作，可能需要增加内存分配以避免内存溢出错误。
+
+最后，实际申请的资源量也可能受到YARN资源请求和调度机制的影响，例如，如果集群的资源紧张，YARN可能无法立即满足申请的资源量，这时候任务可能会等待，或者以较小的资源配置启动。
+```
+
+
+
+### container申请
+
+```sql
+在Hadoop中，MapReduce作业执行时，YARN（Yet Another Resource Negotiator）负责管理和调度资源。具体到MapReduce作业，每个map任务通常会在一个YARN container中运行。Container是YARN中资源分配的基本单位，它封装了某个节点上的资源量，包括内存、CPU等。
+
+对于您的问题，有几个因素会影响到会申请多少个container，以及每个container多大内存：
+
+1. **Map任务数量**：在您的例子中，有400个map任务，因为您的100GB表按照每256MB分割成了400个block。
+
+2. **Container内存大小**：这通常由`mapreduce.map.memory.mb`属性决定，该属性指定了每个map任务运行时可以使用的最大内存量。如果这个值没有被设置，它会使用YARN的`yarn.app.mapreduce.am.resource.mb`或者`yarn.app.mapreduce.am.command-opts`中的默认值。
+
+3. **YARN内存配置**：您提到的`yarn.scheduler.maximum-allocation-mb`是YARN可以分配给单个container的最大内存量，这个值设置为16GB。但是，这并不意味着每个container都会被分配16GB。实际分配的内存大小取决于`mapreduce.map.memory.mb`的设置。
+
+4. **资源可用性**：即使您设定了较大的内存大小，实际分配也会受到集群当前资源使用情况的限制。如果集群资源紧张，可能无法为每个map任务分配一个container，这时就会发生排队等待。
+
+5. **并行度**：`mapreduce.job.running.map.limit`可以限制同时运行的map任务数量，这也会影响到实际分配的container数量。
+
+6. **其他作业**：如果集群中还有其他作业在运行，那么可用的资源会更少，这也会影响到您作业的资源分配。
+
+综上所述，实际申请的container数量取决于您的MapReduce作业配置和集群的当前资源状况。如果没有设置特定的内存大小，那么每个container将会使用默认值或者根据资源可用性来确定。如果设置了特定的内存大小，那么每个container将会尝试使用这个值，但是不会超过`yarn.scheduler.maximum-allocation-mb`指定的上限。
+
+为了获取准确的信息，您需要查看您的MapReduce作业的配置，以及集群的资源管理界面（通常是ResourceManager的Web UI）来确定实际的资源分配情况。
+```
+
+
 
 ### yarn组成作用
 

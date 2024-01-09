@@ -91,11 +91,7 @@ Spark是一个开源的分布式计算框架，用于高性能的大规模数据
 
 ### spark比对MR优势
 
-
-
 迭代计算是指通过多次迭代运算来逐步逼近问题的解决方法。在迭代计算中，每一次迭代都会根据上一次迭代的结果进行计算，并将计算结果作为下一次迭代的输入，直到满足某个终止条件或达到预定的迭代次数。
-
-
 
 spark更适合迭代计算,案例
 
@@ -124,10 +120,6 @@ Spark框架相对于MapReduce框架在以下几个场景下可能更加高效：
 
 
 
-
-
-
-
 即使用hive on spark也比mr快一些
 
 ```sql
@@ -142,11 +134,26 @@ Spark框架相对于MapReduce框架在以下几个场景下可能更加高效：
 
 #hive中如果想减少reduce文件数为1,最后只有1个reduce程序。spark中可以先多并行度reduce，然后最后collese算子减少为1个分区
 #不过这里有个问题，如何在hive上执行这种操作的？还是说我们必须手写sparksql呢
+```
 
+### spark比mr快的原因案例
 
+```sql
+#IO次数减少
+mr，每次进行shuffle都要先io落盘，才会进行shuffle传输，而spark只有在必要时才会落盘。
+并且对于处理过的数据集可以重复使用，mr的逻辑不行，要重新处理
 
+#DAG优化
+spark会将一些任务进行优化，串行一些操作。
+但是有hive的优化器，mr这方面不会差太多，也会进行串行
+
+#连续group
+第一次group by后,再接一个group by 。如果是mr引擎，第一次的reduce必须落盘，然后第二个map再读取。是2个stage
+但是spark中,mr之后，可以直接shuffle到下一个reduce，不用再一个map。是一个stage连续接2个reduce
 
 ```
+
+
 
 
 
@@ -258,6 +265,38 @@ bin/spark-submit \
 ```
 
 # spark运行架构
+
+
+
+### excutor内存模型
+
+```sql
+
+#excutor总内存
+excutor运行在container里面，每个container对应一个excutor
+excutor内存  =  overhead + excution&storage  2部分  
+spark.executor.mermoryOverhead 堆外内存 ,jvm的额外开销，操作系统开销。默认比例excutor总内存的o.1
+spark.executor.mermory 堆内存，计算和存储的内存  占总的0.9
+
+每个excutor总内存设置为:yarn内占用的总内存/yarn能最大提供的container数。
+参数表里没有总内存这项，所以分别设置spark.executor.mermoryOverhead和spark.executor.mermory
+
+#每个应用excutor个数配置
+
+"静态分配"
+每个spark应用提交时，手动指定通过spark.excutor.instances 执行excutor数
+
+
+
+动态分配
+
+
+
+
+
+```
+
+
 
 
 

@@ -53,7 +53,7 @@ settings=>complier=>java complier版本和project structure不同
 
 #### 实现类|接口
 
-重写构造器 ，getter，setter等  control+enter    (windows)alt + insert 
+重写构造器 ，getter，setter等  control+enter     mac版command+ N |   (windows)alt + insert 
 
 实现接口中方法 control + i
 
@@ -268,7 +268,32 @@ idea中没有add，一般直接勾选更改和新建的文件，然后直接comm
 
 
 
+# idea编写scala代码
 
+#### 配置scala
+
+安装scala
+
+scala安装包解压，然后配置环境变量  vim ~/.bash_profile    export PATH=$PATH:scala/bin
+
+idea配置scala
+
+settings=>plugins=>搜索scala下载=>project structure =>Global libarys=>点击加号添加scala依赖
+
+=>接右键项目，选择add framwork 添加scala支持 ，其实是在在project structure的module中增加了scala的denpendcy
+
+
+
+#### 代码提示
+
+```mysql
+#使用new才能提示Class类
+如果不使用new，会从当前依赖库中的Object查找,要先使用new 才能提示Class类
+
+#.var 声明不带类型
+每次.var时，都要勾选specify type 才带类型.
+点击specify type后面的settings，勾选local define
+```
 
 
 

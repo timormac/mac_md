@@ -61,7 +61,13 @@ pom文件加入这个，这个会把所有依赖非provided和test包打包进�
 在阿里云仓库找不到这个模版，建maven项目的时候指定模版指定错了。
 ```
 
+#### http repository are blocked
 
+```mysql
+#idea完整报错
+Since Maven 3.8.1 http repositories are blocked
+原因引文maven 3.8以后的版本,因为协议安全问题开始使用https，不使用http了，所以要想正常用，降低maven配置到3.6版本
+```
 
 
 

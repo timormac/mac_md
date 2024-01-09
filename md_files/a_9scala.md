@@ -40,11 +40,31 @@ scala中的String.spilit方法，类型推断是Array[String] ,实际返回的�
 
 
 
-# 问题记录 
+#### 传名参数没看懂
 
-#### idea无法识别返回值
+```scala
+//withScope方法  
+private[spark] def withScope[U](body: => U): U = RDDOperationScope.withScope[U](sc)(body)
 
-手动给函数:给一个错误的值，idea就会提示报错了，会显示正确类型
+//private[spark]修饰符意味着这个withScope方法是私有的，但在spark包及其子包中是可见的。这是Spark内部API的一部分，不应该在Spark外部的应用程序代码中使用。
+
+
+
+
+//map方法，方法体是调用withScope{...}格式
+def map[U: ClassTag](f: T => U): RDD[U] = withScope {
+    val cleanF = sc.clean(f)
+    new MapPartitionsRDD[U, T](this, (_, _, iter) => iter.map(cleanF))
+  }
+
+在Scala中，可以使用花括号 {} 来定义一个代码块，这个代码块可以作为一个参数传递给方法。在你提供的代码中，withScope 方法接受一个名为 body 的参数，类型为 => U，表示这是一个传名参数（by-name parameter）。
+
+传名参数是一种特殊的参数，它不会立即被求值，而是在方法内部使用时才会被求值。这种延迟求值的特性使得 withScope 方法可以接受一个代码块作为参数，而不需要立即执行它。
+```
+
+
+
+# 问题记录(待回顾)
 
 #### java实现柯里化失败
 
@@ -53,6 +73,30 @@ scala中的String.spilit方法，类型推断是Array[String] ,实际返回的�
 但是实现接口方法时发现,参数类型为Integer时，是重载而不是实现，参数类型Object才实现接口
 
 解决方法方法的返回值和参数都是范型来定义
+
+#### 错误理解参数函数
+
+```scala
+//在spark的mapPatitionWithIndex方法中
+  def mapPartitionsWithIndex[U: ClassTag](f: (Int, Iterator[T]) => Iterator[U]) : RDD[U] = withScope { }
+
+这里的参数类型是个函数，函数是2个参数,一个int，一个迭代器, 参数函数的返回值是迭代器
+
+而我调用方法时,把这个参数的函数类型，当作了一个元组类型，所以调用_._1没有提示。
+```
+
+
+
+
+
+# 问题已记住(备份)
+
+```mysql
+#### .var不自动声明返回值
+.var时勾选specify type ,或者配置自动勾选
+```
+
+
 
 
 
@@ -104,9 +148,123 @@ lamda表达式
 
 
 
+# scala源码解读
+
+#### 官网学习scala步骤
+
+官网=>reference=>scala2 language specification里面就是语法
+
+#### 范型
+
+```mysql
+#类范型
+class RDD[T: ClassTag]{}
+
+#方法范型
+def map[U: ClassTag](f: T => U): RDD[U] = {}
+
+#这个方法范型看不懂
+def map[B, That](f: A => B)(implicit bf: CanBuildFrom[Repr, B, That]): That = {}
+
+map是一个泛型方法，它有两个类型参数：B和That。
+f: A => B是一个函数参数，它接受一个类型为A的元素并返回一个类型为B的结果。
+(implicit bf: CanBuildFrom[Repr, B, That])是一个隐式参数，它指定了如何构建返回的新集合。
+That表示返回的新集合的类型，Repr表示原始集合的类型。
+方法体为空，需要根据具体的集合类型和返回类型来实现具体的转换逻辑
+```
+
+#### spark中map方法
+
+```scala
+//withScope方法  
+private[spark] def withScope[U](body: => U): U = RDDOperationScope.withScope[U](sc)(body)
+
+//private[spark]修饰符意味着这个withScope方法是私有的，但在spark包及其子包中是可见的。这是Spark内部API的一部分，不应该在Spark外部的应用程序代码中使用。
+
+
+
+
+//map方法，方法体是调用withScope{...}格式
+def map[U: ClassTag](f: T => U): RDD[U] = withScope {
+    val cleanF = sc.clean(f)
+    new MapPartitionsRDD[U, T](this, (_, _, iter) => iter.map(cleanF))
+  }
+
+在Scala中，可以使用花括号 {} 来定义一个代码块，这个代码块可以作为一个参数传递给方法。在你提供的代码中，withScope 方法接受一个名为 body 的参数，类型为 => U，表示这是一个传名参数（by-name parameter）。
+
+传名参数是一种特殊的参数，它不会立即被求值，而是在方法内部使用时才会被求值。这种延迟求值的特性使得 withScope 方法可以接受一个代码块作为参数，而不需要立即执行它。
+```
+
+
+
 
 
 # ——————编码————————
+
+# 学习scala步骤
+
+### scala特点
+
+```
+Scala 语言适合并发和分布式编程的原因有几个方面：
+
+1. **函数式编程特性**：Scala 是一种结合了面向对象和函数式编程的语言。函数式编程特性，如不可变性（immutability）和高阶函数，使得并发编程更加安全和简洁，因为它们减少了共享状态和副作用，这是并发编程中常见的问题源。
+
+2. **Actor 模型**：Scala 通过 Akka 框架提供了 Actor 模型的实现。Actor 模型是一种并发模型，其中每个 actor 是一个并发实体，它们通过消息传递来通信，避免了共享状态。这种模型非常适合分布式系统，因为它可以很自然地扩展到多机环境。
+
+3. **类型安全**：Scala 的强类型系统可以在编译时捕获许多并发和分布式编程中可能出现的错误，这有助于开发者编写更加健壮的代码。
+
+4. **兼容性**：Scala 完全兼容 Java，可以无缝地使用所有的 Java 类库和工具。这意味着可以在 Scala 项目中利用已经存在的 Java 生态系统，包括用于并发和分布式的库和框架。
+
+关于 Apache Flink 部分模块使用 Scala 而不是 Java 的原因，可能有以下几点：
+
+1. **简洁性**：Scala 代码往往比 Java 更加简洁，特别是在处理复杂的数据处理流水线时。Flink 的 API 设计可以通过 Scala 的语法糖和函数式编程特性来实现更加简洁和表达性强的代码。
+
+2. **类型推断**：Scala 的类型推断机制可以让开发者在编写 Flink 应用时写出类型安全而又不啰嗦的代码，提高开发效率。
+
+3. **模式匹配**：Scala 的模式匹配对于处理复杂的数据结构和算法非常有用，这在流处理和复杂事件处理中尤其常见。
+
+4. **集合操作**：Scala 提供了丰富的集合操作，这些操作在流处理中非常有用。Flink 中的许多数据转换可以直接利用 Scala 的集合 API 来实现，这使得代码更加直观和高效。
+
+5. **社区偏好**：Flink 社区可能有很多 Scala 用户，他们偏好使用 Scala 来扩展和改进 Flink。社区的贡献和偏好通常会影响开源项目的发展方向。
+
+总的来说，Scala 提供了许多适合并发和分布式编程的特性，这些特性也使得它成为开发复杂的 Flink 应用的一个很好的选择。然而，这并不意味着 Java 不再被使用；实际上，Flink 仍然支持使用 Java 进行开发，并且许多 Flink 应用仍然是用 Java 编写的。选择 Scala 或 Java 通常取决于项目需求、开发团队的技能和偏好。
+```
+
+### 学习scala步骤
+
+```mysql
+Scala确实在某些方面比Java更复杂，尤其是因为它结合了面向对象编程和函数式编程的特性。Scala的语法也更加灵活和简洁，这可能会让习惯了Java那种更加冗长和直接的代码风格的开发者感到困惑。不过，理解Scala的几个关键概念可以帮助你更好地阅读和理解Scala代码。
+
+1. **Object和Class**：
+   Scala中的`object`是一个单例对象的声明，它相当于Java中的静态成员的集合体。当你声明一个`object`时，Scala会自动为你创建一个类型和一个该类型的唯一实例。而`class`则和Java中的类相似，用来创建多个不同的实例。
+
+2. **伴生对象和伴生类**：
+   在Scala中，`class`和同名的`object`可以互为伴生，即一个`class`和一个`object`可以拥有相同的名字，它们必须定义在同一个文件中。`class`是类型的定义，而`object`通常包含静态成员和静态方法，类似于Java中的静态方法。伴生对象可以访问伴生类的私有成员，反之亦然。
+
+3. **apply方法**：
+   `apply`方法在Scala中非常特殊，它让你可以像调用函数一样调用对象。当你使用`ObjectName()`时，实际上是在调用这个对象的`apply`方法。这个特性常常用于伴生对象，以提供一种简洁的创建类实例的方式，而无需使用`new`关键字。
+
+为了更好地理解Scala代码，以下是一些建议：
+
+- **逐步学习Scala的语法**：花时间逐步学习Scala的基础语法，从简单的概念开始，逐渐过渡到更复杂的特性，比如隐式转换、模式匹配、特质（Traits）等。
+
+- **实践编程**：尝试写一些Scala程序，从简单的开始，比如"Hello, World!"，然后逐步增加复杂性。编程实践是理解语言的最佳方式之一。
+
+- **阅读和分析现有的Scala代码**：找一些开源的Scala项目，阅读和尝试理解它们的代码。开始时，你可以从简单的代码片段开始，逐渐过渡到整个项目。
+
+- **使用IDE**：使用集成开发环境（IDE）如IntelliJ IDEA的Scala插件。这些工具通常提供代码高亮、自动完成、快速查看定义等功能，可以帮助你更好地理解代码。
+
+- **参考文档和书籍**：阅读Scala的官方文档以及其他高质量的Scala书籍。《Programming in Scala》是一本不错的入门书籍。
+
+- **加入社区**：参与Scala社区，比如论坛、Stack Overflow、Reddit等，可以让你在遇到问题时寻求帮助，同时也能让你了解到更多的最佳实践。
+
+- **有耐心**：任何新技能的学习都需要时间和耐心，尤其是对于一门具有相当深度的编程语言，如Scala。不要期望一蹴而就，给自己一些时间去适应。
+
+记住，每个人学习新事物的速度都不一样。保持耐心，持续实践，随着时间的推移，你会发现Scala代码变得越来越容易理解。
+```
+
+
 
 # 环境准备
 
@@ -142,9 +300,43 @@ settings=>plugins=>搜索scala下载=>project structure =>Global libarys=>点击
 
 •  true, false, null
 
+
+
+# 方法参数类型
+
+```mysql
+在Scala中，方法参数可以采取多种形式，包括：
+
+#1. **普通参数**：
+   def add(a: Int, b: Int): Int = a + b
+
+#2. **函数参数**：
+   def operateOnNumbers(operation: (Int, Int) => Int): Int = operation(1, 2)
+
+#3. **可变参数**：
+   def printAll(strings: String*): Unit = strings.foreach(println)
+   
+#4. **使用方法时,按参数名赋值，不按顺序**
+   def printName(first: String, last: String): Unit = {}
+   printName(first = "Jane", last = "Doe")
+
+#5. **参数默认值**：
+   def greet(name: String = "World"): Unit = println("Hello, " + name + "!")
+
+#6. **隐式参数**：方法可以有一个隐式参数列表，这些参数由编译器自动填充。
+   def doSomethingWithImplicit(implicit ctx: Context): Unit = ...
+
+#7. **按名参数（by-name parameters）**：方法参数可以是按名传递，而不是按值传递。这意味着参数表达式在方法内部每次被引用时才会被计算。
+
+   def myMethod(param: => Int): Unit = {
+     // param在这里每次使用时都会被重新计算
+   }
+
+```
+
+
+
 # 闭包和柯里化
-
-
 
 闭包
 
@@ -331,18 +523,7 @@ val mysql1 = new MySQL
 mysql1.addSuffix()
 ```
 
-### 源码解读
 
-```scala
-def map[B, That](f: A => B)(implicit bf: CanBuildFrom[Repr, B, That]): That = {}
-
-```
-
-map是一个泛型方法，它有两个类型参数：B和That。
-f: A => B是一个函数参数，它接受一个类型为A的元素并返回一个类型为B的结果。
-(implicit bf: CanBuildFrom[Repr, B, That])是一个隐式参数，它指定了如何构建返回的新集合。
-That表示返回的新集合的类型，Repr表示原始集合的类型。
-方法体为空，需要根据具体的集合类型和返回类型来实现具体的转换逻辑
 
 # 语法
 
