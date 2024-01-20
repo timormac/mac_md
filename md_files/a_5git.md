@@ -475,6 +475,8 @@ dir1/  不跟踪dir1目录
 
 #git add  a.txt
 将工作区变更提交到缓冲区,这里会有个缓冲区版本
+#git add -A 
+把工作区的修改都提交到缓冲区，包括修改，新增文件，删除文件
 
 #git restore --staged  a.txt
 

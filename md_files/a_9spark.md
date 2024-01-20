@@ -51,7 +51,15 @@ val groupBy:RDD[(String,Iterable[String] )] = flatmap.groupBy(s=>s)
 
 
 
-# 问题已解决
+#### Stream流的checkpoint
+
+什么时候执行ck，并且中间状态kafka等状态，会存哪些
+
+
+
+
+
+# 问题已解决(待回顾)
 
 #### pom导入依赖报错
 
@@ -62,6 +70,28 @@ Could not find artifact org.pentaho:pentaho-aggdesigner-algorithm:jar:5.1.5-jhyd
 windows当初能下载是用了默认的maven的conf.xml，没有用更改的阿里云的源
 
 在mac上更改配置文件为maven自带的就行，仓库还用自己的仓库存jar包
+
+
+
+#### cache的落盘和checkpoint
+
+cache等级有全部落盘等级，那和checkpoint有什么区别呢？
+
+checkpoint和cache区别：
+ck可以设置hdfs路径是高可用。cache当设置存在磁盘时也是本地，不是高可用
+ck切段血缘关系,cache不会切断
+
+
+
+# 问题已记住( 备份)
+
+```mysql
+
+
+
+```
+
+
 
 # 概览
 
@@ -326,6 +356,37 @@ Rdd只记录运算逻辑，所以我们可以手动实现一个操作类，对rd
 
 个人理解宽窄依赖是为了后面生成执行计划stage的，不同算子继承了宽窄依赖。然后根据是否有宽依赖确定时候分stage
 
+#### cache/persist
+
+```mysql
+#cache功能
+当某一个rdd你多次调用action算子时,比如同一个rdd你执行2次collect
+那么这个rdd如果是通过map生成的，那么会重新执行2次map，因为缓存cache是不会自动调用的
+当你执行rdd.cache()，那么当多次调用rdd，会从缓存拿，而不会多次重新计算map
+
+#persist设置缓存级别 
+map.persist(StorageLevel.MEMORY_AND_DISK_2)
+具体看work文档
+```
+
+
+
+#### checkpoint
+
+就是将rdd的中间结果写入磁盘，避免血缘依赖过长，当出问题时，全部重新算。
+
+具体看代码，主要要加cache，不然就和多次调用行动算子一样，重跑一次rdd生成逻辑。
+
+
+
+checkpoint和cache区别：
+
+​			 ck可以设置hdfs路径是高可用。cache当设置存在磁盘时也是本地，不是高可用
+
+​			ck切段血缘关系,cache不会切断
+
+
+
 
 
 # sparksql
@@ -354,4 +415,10 @@ shark分析引擎是基于hive，针对spark架构做了修改，能运行在spa
 
 不学spark structured Streaming
 
+#### 待解决
+
+spark中的group by key等是对当前批次的进行key by ，那么我想今天数据group by key怎么办?
+
 #### 手动实现侧输出流
+
+#### 
