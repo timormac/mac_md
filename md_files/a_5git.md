@@ -40,7 +40,33 @@ idea操作方法:
 
 
 
+#### 连接github超时
 
+```mysql
+#问题描述
+之前没问题，有一天在wins上，git pull报错连接github超时（connection time out）
+但是电脑能正常访问github网页
+
+#问题原因
+Git文档说的原因是有可能是防火墙完全拒绝允许 SSH 连接
+通过http创建ssh连接，大部分防火墙允许。不过可能是代理问题产生干扰
+
+#解决方法
+找到windows下git的安装目录， 然后在Git\etc\ssh\中找到 ssh_config文件，然后在这个文件的末尾加上下面这段设置：
+Host github.com
+User XXXX@163.com(github账号) 
+Hostname ssh.github.com
+PreferredAuthentications publickey
+Port 443
+
+mac系统: .ssh目录下添加一个文件：config
+Host github.com
+User XXXX@163.com(github账号) 
+Hostname ssh.github.com
+PreferredAuthentications publickey
+Port 443
+
+```
 
 
 
@@ -353,6 +379,7 @@ git pull origin master --rebase
 
 #执行git status 查看失败pull的状态
 timor@lixianshengdeMacBook-Pro Desktop % git status
+
 交互式变基操作正在进行中；至 56fe382
 最后完成的命令（1 条命令被执行）：
    pick 73d2f7a mac第二次测试冲突
@@ -387,9 +414,13 @@ windows加入了这一行
 mac增加了这一行
 mac又增加了这一行
 >>>>>>> 73d2f7a (mac第二次测试冲突)
+
+#idea人性化对比冲突文件
+右键空白，git,resolve conflicts就能看到2次版本对比
   
 #手动解决冲突
 解决冲突时，要把====  <<<<HEAD删除，并且把文件改成你想要的样子,修改后执行git add 冲突文件名字
+
 
 #再执行git status,如下
 交互式变基操作正在进行中；至 56fe382
@@ -406,6 +437,26 @@ mac又增加了这一行
 
 注意git pull 默认有个合并后commit的版本，这个版本的 -m介绍 就是你本地的那次 -m介绍
 当你合并了冲突push后，windows版本再拉取时，就不用再解决冲突了，直接拉取就成功了
+
+#错误操作
+当解决冲突后执行,git add冲突文件，然后应该直接执行git rebase --continue 
+但是我先执行了git commit，然后执行git rebase --continue,显示如下，并且状态是(master|rebase 1/1)
+
+”“”
+$ git rebase --continue
+Applying: 2024-01-29 WINS提交代码
+No changes - did you forget to use 'git add'?
+If there is nothing left to stage, chances are that something else
+already introduced the same changes; you might want to skip this patch.
+
+Resolve all conflicts manually, mark them as resolved with
+"git add/rm <conflicted_files>", then run "git rebase --continue".
+You can instead skip this commit: run "git rebase --skip".
+To abort and get back to the state before "git rebase", run "git rebase --abort".
+“”“
+
+如果你确定commit是正确的，执行git rebase --skip就可以
+
 ```
 
 

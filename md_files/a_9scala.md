@@ -148,6 +148,28 @@ lamda表达式
 
 
 
+# scala中使用java类
+
+#### 代码区别
+
+```mysql
+#获取类的全类名
+java代码:  StringDeSerialize.class.getName();
+但是上述java代码直接放到scala中是无法执行的，因为scala和java的语法编译器有区别
+scala代码: classOf[StringDeSerialize].getName()
+
+```
+
+
+
+### 
+
+
+
+
+
+
+
 # scala源码解读
 
 #### 官网学习scala步骤

@@ -6,6 +6,8 @@
 
 因为xml名字弄错了，应该是log4j2.xml ，我新建的是log4j.xml
 
+### spark中log4j2文件不生效
+
 
 
 # 平时使用
@@ -103,7 +105,7 @@ public static void main(String[] args) {
         </dependency>
 ```
 
-##### 文件配置
+##### log4j2.xml配置
 
 log4j2配slf4j，只需要配置log4j2.xml文件即可以
 
@@ -116,6 +118,13 @@ log4j2配slf4j，只需要配置log4j2.xml文件即可以
         <Property name="logPath">/path/to/logs</Property>
     </Properties>
     <Appenders>
+          <!--   -->
+          <!-- 指定控制台记录,名字叫ConsoleAppender -->
+      <Console name="ConsoleAppender" target="SYSTEM_OUT"> 
+        <PatternLayout pattern="%d [%t] %-5level %logger{36} - %msg%n" /> 
+      </Console>
+      
+      <!-- 指定info日志记录，名字叫 infoAppender  -->
         <RollingFile name="infoAppender" fileName="${logPath}/info.log"
                      filePattern="${logPath}/info-%d{MM-dd-yyyy}.log.gz">
             <ThresholdFilter level="info" onMatch="ACCEPT" onMismatch="DENY"/>
@@ -158,7 +167,30 @@ log4j2配slf4j，只需要配置log4j2.xml文件即可以
 请注意，这只是一个简单的示例配置文件，你可以根据实际需求进行更多的配置和调整。同时，确保在项目中正确引入log4j2和slf4j的相关依赖，并将配置文件放
 ```
 
+##### log4j2.xml解读
 
+```mysql
+#Loggers样例 
+   <Loggers>
+        <Root level="info">
+            <AppenderRef ref="infoAppender"/>
+            <AppenderRef ref="errorAppender"/>
+            <AppenderRef ref="ConsoleAppender" level="warn">
+        </Root>
+    </Loggers>
+
+#Logger作用
+idea执行sparkStream时,如果不设置log4j2.xml文件，默认是打印到idea控制台上的。
+当你配置了log4j2.xml,idea控制台还是会打印，因为默认会有一个ConsoleAppnder
+<AppenderRef ref="infoAppender"/> 前面文件定义的infoAppender，会记录定义内指定的内容
+<Root level="info">，表示日志级别设置为info级别，会记录info及其以上的日志
+<AppenderRef ref="ConsoleAppender" level="warn">,表示控制台打印的日志级别是warn以上的级别,ConsoleAppender是前面定义的
+    
+#上面有点问题，spark中配置不生效    
+    
+    
+    
+```
 
 
 
@@ -438,7 +470,6 @@ pom
         </dependency>
  </dependencies>
 ```
-
 
 
 

@@ -2,7 +2,7 @@
 
 #### lombok一直编译失败
 
-java: 程序包lombok不存在.
+java: 程序包lombok不存在
 
 flink-1.17用不了，新建的就能用lombok不知道怎么回事
 
