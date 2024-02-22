@@ -221,9 +221,9 @@ nohup 命令运行由 Command参数和任何相关的 Arg参数指定的命令�
 nohup放在命令的开头，表示不挂起（no hang up），也即，关闭终端或者退出某个账号，进程也继续保持运行状态，一般配合&符号一起使用。如nohup command &。
 
 
-#Shell中可能经常能看到：>/dev/null 2>&1
+#Shell中可能经常能看到：> /dev/null 2>&1
 /dev/null 代表空设备文件
-  \> 代表重定向到哪里，例如：echo "123" > /home/123.txt
+  > 代表重定向到哪里，例如：echo "123" > /home/123.txt
   1 表示stdout标准输出，系统默认值是1，所以">/dev/null"等同于"1>/dev/null"
   2 表示stderr标准错误
   & 表示等同于的意思，2>&1，表示2的输出重定向等同于1

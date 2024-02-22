@@ -10,6 +10,35 @@
 
 # 问题待解决
 
+### 未知hql问题
+
+```mysql
+select 
+recipient
+from(
+select 
+recipient,
+sum( amount ) over(  partition by recipient order by amount desc ) as total ,
+sum(1) over(partition by recipient order by amount desc     ) as num
+from transfers
+)as tmp 
+where total >= 1024 and num <=3
+group by recipient
+;
+
+这里有个问题就是当order by的amount相同时，sum(1),num直接有2个相同的，正常时1，2，3 相同时就是2，2，3
+```
+
+
+
+### hive导入数据
+
+现在文本数据是txt格式，目标表建表是压缩格式，那么load的数据,会将txt改为压缩格式吗？
+
+load是hive的的指令，所以parquet表无法识别txt表。select 查询是报错，不是个parquet文件
+
+
+
 ### hive on spark中driver内存
 
 下面，为什么给driver设置那么大内存12G，每个task启动一个12g的driver不浪费吗
@@ -230,6 +259,12 @@ YARN的容器设置最大内存为8GB，并将MapJoin阈值设置为6GB，这里
 ### hive -e指令报错
 
 ```mysql
+#易错1
+sql= "create table"
+echo $sql
+当""前有空格，会报错找不到create table的command
+
+#易错2
 您在定义 `sql` 变量时使用了引号，这导致整个查询字符串被视为一个单独的参数传递给 `hive -e` 命令。这可能会导致语法错误或意外的行为。
 
 要解决这个问题，您可以尝试修改脚本，将 `sql` 变量定义为仅包含查询语句，而不包含引号。然后，将查询语句直接传递给 `hive -e` 命令，如下所示：
@@ -349,6 +384,34 @@ Hive是一个建立在Hadoop上的数据仓库工具，它最初是使用MapRedu
 
 
 # hive配置spark引擎
+
+
+
+### hive用spark引擎对比presto
+
+```mysql
+#分析数据的方式
+目前来说hdfs上数据，通常通过hive来管理。查询分析hive数据仓库的方式有hive,sparksql,presto,implala等
+
+#对比impala
+Impala和Presto都是为了解决Hadoop生态系统中大数据即席查询（ad-hoc query）的需求而设计的系统比基于Spark引擎的Hive更快：
+
+1. **执行引擎**:
+   - **Impala** 使用了自己的大规模并行处理（MPP）引擎，它不依赖于MapReduce模型。Impala是为了分析型查询而设计的，它直接在存储数据的节点上执行SQL查询，减少了数据移动，并且避免了MapReduce的启动延迟。
+   - **Presto** 同样是一个MPP系统，它使用了一种更为现代的查询执行引擎，支持内存中的数据流处理，这意味着它可以更快地执行查询，因为它减少了对磁盘的依赖。
+
+2. **查询优化**:
+   - **Impala** 和 **Presto** 都有更先进的查询优化器。它们可以生成更有效的执行计划，尤其是对于复杂的查询。这些优化器会考虑数据的分布、列的选择性以及其他因素来生成更为高效的执行策略。
+
+5. **服务模型**:
+   - 正如你提到的，Impala和Presto都是长时间运行的守护进程，这意味着它们可以立即响应查询请求，而不需要像Spark那样每次查询都启动一个新的应用程序。这减少了查询的启动时间，使得即席查询的响应更快。
+
+6. **资源管理**:
+   - Hive通常依赖YARN进行资源管理，这会增加调度的开销。而Impala和Presto有自己的资源管理器，可以更快地分配资源，尤其是在多用户并发查询的环境中。
+
+```
+
+
 
 ### hive on spark(需要安装spark)
 
@@ -580,7 +643,7 @@ set hive.map.aggr=true  开启预聚合
 set hive.map.aggr.hash.percentmermory =0.5  开启map聚合是要额外费内存的,将聚合结果维护在map任务中的一个hash-table，这个参数是设置hash-table能占多大内存
 
 #join
-目前的join算法,common join ,map join ,bucket map join
+目前的join算法,common join ,map join ,bucket map join，skew join 
 
 common join 根据关联字段进行分区,发送到reducer，由reducer完成关联
 
@@ -613,6 +676,13 @@ set hive auto.convert.join.noconditional.size = ;
 bucket map join(因为map join只能大join小，为了解决这个情况，有这个设计):
 条件是2个表都是分桶表，然后关联字段是分桶字段，并且大表分桶数是小表的整数倍，这时就能实现优化.
 因为当2个表都大的时候,不能小表加载到内存，当分桶后，小表只加载用到的桶的数据，桶的数据够小的时候，所以就可能完成map join
+
+#skew join 
+set hive.optimize.skewjoin =true 开启。
+set hive.skewjoin.key = 10000，当某个key数量超过多少，触发。
+注意只支持inner join 
+具体去看hive优化中，数据倾斜的热点数据处理，思路是那个思路
+
 
 
 #数据倾斜
@@ -674,11 +744,33 @@ set hive.merge.sparkfiles =true (默认是不开启的)，执行reducer还是多
 #### 数据倾斜
 
 ```mysql
-#group by,聚合字段是城市
+#出现场景
+主要是热点问题,某个key占绝大部分数据,导致groupby或者join倾斜。
+热点问题，第一个就是空值/默认值，第二个就是热点
 
-#join场景,关联键位是城市
-比如业务表join维度表，关联键位是城市id。
-这种情况下主业务城市会数据倾斜，最好把维度表设置成map join，有时候维度表比较大，比默认值大，但是你的集群内存规模是可以容纳这个维度加载到内存的，可以手动临时指定维度表范围大小，来实现map join
+#解决方案1 mapjoin
+大表join小表
+map join,默认有个20m配置,如果集群内存够大可以修改这个参数。
+
+#方案2 热点key打散
+1 空值，默认值情景打散，if判断如果key是"",则加随机数,若非空则正常，关联维度表
+2 热点key打散,在groupby场景下,给key+｜随机数(1-10)先聚合一次，然后再按｜切分再聚合一次
+3 热点key打散,在join场景下,给key+｜随机数(1-10),然后维度表去笛卡尔积1-10扩大10倍。这个场景是维度表数量级远小于主表,但是维度表也相对大，不能mapjoin加载到内存
+
+
+
+#方案3 热点单独处理
+大表join中维度表
+1 先从大表 执行group by shopid having count(*)>100000,来找出热点商铺。因为groupby 可以执行map端预聚合，所以shuffle时,数据量小,不会出现group by这里出现热点问题导致速度慢，然后存入临时表。
+
+2 用大表 join 热点商户表,过滤出热点商户数据,因为热点商户表数据很小，这里是mapjoin没有大批量shuffle。
+然后中维度表关联热点表,过滤出热点商户维度，再关联上面过滤的，中维度表过滤后，也是小表是map join 没有shuffle
+
+3 总结为什么会快
+步骤1执行后的数据,步骤2执行后的数据都是临时mr数据，因为都是mapjoin，所以reduce结果都在本节点落盘。
+当在join时，把维度表作为mapjoin，这样热点数据是多服务器计算，不是单服务器，并且没有跨节点的shuffle落盘，只有本地落盘
+
+4 再union all非热点数据，和流程2一样，区别就是非热点的商户是个大表，不能mapjoin。这里就是热点的mapjoin+非热点的shuffle
 
 ```
 
@@ -969,8 +1061,9 @@ hive -e "sql" > /home/a.txt  --把查询的sql 导入本地文件
 1.从hdfs或本地目录 中导入数据到hive
   load data [local] inpath  '/opt/a.txt'  [overwrite] into table t1 [partition (month=202012)]
   注意load数据之后,hdfs上的数据就没有了，如果想原文件继续存在，那么创建的表必须是外部表。
+  本地文件导入之后，本地文件还存在
 
-	提示当原数据是txt文本格式，用load 导入到设置为parquet的表中，不能将数据转为parquet
+	提示当原数据是txt文本格式，用load 导入到设置为parquet的表中，报错不能将数据转为parquet
   
   
 
@@ -1745,7 +1838,23 @@ select * from tmp  where id in (select id from tmp_copy);
 
 ### on的非等值连接
 
-支持on条件非等值连接
+```mysql
+支持on条件非等值连接,但是底层原理好像是笛卡尔积，然后再过滤，通过explain一个案例可以看到
+#案例
+t1表  
+name  start  end 
+不及格 0  		 60
+
+t2表
+score 
+10 
+
+select * from t2 join t1 on t2.socore>t1.start and t2.score < t1.start
+这个语句是可以执行的，不会报错。
+keys关联条件，是没有字段。正常是有关联字段的。但是explain看到是笛卡尔积，后再过滤的。
+
+
+```
 
 
 
@@ -1802,7 +1911,7 @@ lateral view explode( split(cate,',') ) tmp as type;
 
 select name, departid,salary
 
-row_number( partition by departid )   from  tb ;
+row_number( ）over(partition by departid )   from  tb ;
 
 这里的窗口范围是指，当前行的所在的departid对应的组所有数据。
 
@@ -1899,6 +2008,25 @@ select
 split (  max( concat(createtime,"|", userid )),"|",2 ) as userid 
 from tb
 group by subject
+```
+
+
+
+#### 表join(条件字段在b,c范围之间)
+
+```mysql
+#题干
+t1表  
+name  start  end 
+不及格 0  		 60
+
+t2表
+score 
+10 
+
+#目标获取t2表分数所在分段
+最简单的是笛卡尔积，然后过滤满足 start<score<end
+
 ```
 
 

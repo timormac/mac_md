@@ -96,7 +96,22 @@ stream流中，每5秒，就会创建一个mysql连接，这个效率太低了�
 总之，虽然Spark不是为了在不同批次之间直接共享状态而设计的，但你可以通过上述方法来实现类似的效果。重要的是要确保连接管理逻辑是健壮的，避免因为连接共享而引起的并发问题、连接泄漏或其他资源管理问题。
 ```
 
+#### SparkConf创建多个流
 
+```mysql
+#spark和flink中的sparkconf是什么？
+用同一个sparkconf创建多个流，那么实在同一个excutor中多个线程，同时并行吗？细节？
+```
+
+#### DStream.window方法
+
+```mysql
+#源码中代码
+def window(Duration,Duration):DStream = ssc.withScop{
+new windowedDStream()
+}
+为什么通过.window方法，spark会自动将每个窗口周期内的rdd，让去窗口中，这个代码逻辑是在哪里实现的？
+```
 
 
 

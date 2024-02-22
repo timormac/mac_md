@@ -6,6 +6,8 @@ checkpoint和状态编程还有barrier重听
 
 到p21数据倾斜
 
+
+
 # 待解决问题
 
 #### checkpoint增量和全存

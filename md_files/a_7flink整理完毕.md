@@ -100,7 +100,11 @@ FlinkKafkaShuffleConsumer是他的继承类，不过没有public构造器,也没
 TTL为了防止内存无限制扩大
 
 #想要的TTL
-但是我想要的情况，是ListState中某些数据过期后,把list中过期数据清除，然后新建一个更小的list替换当前这个很大内存的list
+但是我想要的情况，是ListState中某些数据过期后,把list中过期数据清除，然后新建一个更小的list替换当前这个很大内存的list。
+
+#需求实现
+状态中,每个用户统计当天的数据，第二天只要第二天的数据，想要第一天数据过期
+使用date|userid作为key，这样日子不同key不同,然后设置ttl为1天，这样第三天，第一天的数据就全部没有了。
 
 #案例1 
 对于按键分区的流，比如记录每个用户24小时内浏览的页面，放入liststate中。设置ttl为24小时
@@ -205,6 +209,10 @@ public class KafkaSink  implements StatefulSink,TwoPhaseCommittingSink{}
 
 
 
+# flink优化
+
+
+
 # 代码案例
 
 ### hdfs精准一次
@@ -238,7 +246,7 @@ FileSink实现了两阶段提交和预写日志接口：TwoPhaseCommittingSink +
 
 
 
-# flink-yarn启动模式
+
 
 # flink-yarn模式
 
@@ -298,6 +306,7 @@ run-application模式下，JobManager 和 TaskManager 是一起的。JobManager 
 /yarn-session.sh -n 1 -s 3 -jm 2048 -tm 2048  -nm tiomr_session
 
 #会话模式，会提交到session集群中
+（这个目前可能有问题,没有指定session集群，并且和application模式一样，无法判断）
 bin/flink run-application -t yarn-application -c Wordcount  a.jar 
 
 其他参数
@@ -370,6 +379,9 @@ slot时taskmanager的线程，taskmanager的jvm可以有多个线程slot,
 yarn-session模式下，启动时设置4个taskmanager,每个4个插槽，共16个slot。你占用15个，剩下一个还是可以提交flink任务的。
 因此同一个jvm,不同slot可以执行不同的flink任务，所以slot之间不互通
 
+一个jvm可以执行多个不同的java任务。java a.class指令，每次执行会单独创建一个jvm。可以通过工具提交java任务，到之前的jvm。
+这个就是以前不理解的jvm重用，现在理解了。
+
 ```
 
 
@@ -405,7 +417,7 @@ map(s->s).slotSharingGroup("1")
 
 ### flink如何确定task数量
 
-当你的并行度为9时，并且你的slot参数参数为2，那么会申请5个task。
+当你的并行度为9时，并且session集群的slot参数为2(及每个taskmanager有2个slot)，那么会申请5个task。
 
 并行度/slot数。
 
@@ -511,8 +523,6 @@ TTL为了防止内存无限制扩大
 
 
 
-
-
 ### statebackend
 
 总结一下，状态后端负责实时管理状态，检查点负责周期性地持久化状态以便故障恢复，而 Changelog 提供了一种更细粒度的状态变化记录，允许在检查点之间进行更快的状态恢复。这三者共同构成了 Flink 的强大容错和状态管理体系。
@@ -555,7 +565,7 @@ checkpoint就是对状态的快照保存。statebackend就是状态的使用以�
 
 - **作用**: 检查点是 Flink 容错机制的核心。它是在特定时间点对状态的一致性快照。如果发生故障，Flink 可以从最近的检查点恢复状态和计算，从而保证了数据处理的精确一次性（exactly-once）语义。
 - **实现**: 当执行检查点时，Flink 会调用状态后端来持久化状态信息。对于 `HashMapStateBackend`，状态被持久化到配置的检查点存储位置（如分布式文件系统）。对于 `RocksDBStateBackend`，状态已经存储在磁盘上，因此检查点主要涉及将状态的增量变化持久化到远程存储。
-- 检查点会存储哪些数据
+- 检查点会存储哪些数据：状态，kafka消费偏移量等
 
 
 
