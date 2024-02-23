@@ -213,6 +213,25 @@ public class KafkaSink  implements StatefulSink,TwoPhaseCommittingSink{}
 
 
 
+# flink项目
+
+### 问题待解决
+
+```mysql
+#多并行度的join流程
+flink是流处理，可以2个流join得到join流，再process里定义2个map状态。相比spark的2流join方便的多
+问题：多并行度多个流join,没有做keyby操作,万一2个流没进入一个joinstream怎么办？
+
+#用connect实现多并行度join关联
+flink是流处理，可以2个流connect得到conn流。因为多并行度需要keyby会对key取hash进行分配并行度。
+然后再process里定义2个map进行存储，流数据进入，进行关联
+
+#什么时候用窗口
+只有需要滑动，滚动等条件时才用窗口
+```
+
+
+
 # 代码案例
 
 ### hdfs精准一次

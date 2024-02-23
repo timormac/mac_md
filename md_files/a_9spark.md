@@ -455,6 +455,19 @@ shark分析引擎是基于hive，针对spark架构做了修改，能运行在spa
 
 
 
+#### idea上sparksql连接hive
+
+```mysql
+#idea操作
+将hive-site.xml放入resource就行
+
+
+#服务器操作
+将hive-site.xml 放入spark客户端的conf下
+```
+
+
+
 #### dataframe
 
 #### dataset

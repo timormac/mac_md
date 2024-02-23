@@ -754,7 +754,7 @@ map join,默认有个20m配置,如果集群内存够大可以修改这个参数�
 
 #方案2 热点key打散
 1 空值，默认值情景打散，if判断如果key是"",则加随机数,若非空则正常，关联维度表
-2 热点key打散,在groupby场景下,给key+｜随机数(1-10)先聚合一次，然后再按｜切分再聚合一次
+2 热点key打散,在groupby场景下,给key+｜随机数(1-10)先聚合一次，然后再按｜切分再聚合一次，一般有预聚合用不上
 3 热点key打散,在join场景下,给key+｜随机数(1-10),然后维度表去笛卡尔积1-10扩大10倍。这个场景是维度表数量级远小于主表,但是维度表也相对大，不能mapjoin加载到内存
 
 
@@ -873,27 +873,7 @@ SET hive.merge.size.per.task = 268435456;
 
 SET hive.merge.smallfiles.avgsize = 16777216;
 
-（1）在map执行前合并小文件，减少map数：CombineHiveInputFormat具有对小文件进行合并的功能（系统默认的格式）。HiveInputFormat没有对小文件合并功能。
 
-set hive.input.format= org.apache.hadoop.hive.ql.io.CombineHiveInputFormat;
-
-（2）在Map-Reduce的任务结束时合并小文件的设置：
-
-在map-only任务结束时合并小文件，默认true
-
-SET hive.merge.mapfiles = true;
-
-在map-reduce任务结束时合并小文件，默认false
-
-SET hive.merge.mapredfiles = true;
-
-合并文件的大小，默认256M
-
-SET hive.merge.size.per.task = 268435456;
-
-当输出文件的平均大小小于该值时，启动一个独立的map-reduce任务进行文件merge
-
-SET hive.merge.smallfiles.avgsize = 16777216;
 
 
 
@@ -1835,6 +1815,8 @@ select * from tmp  where id in (select id from tmp_copy);
  from  ods_mysql_orderinfo as info
  group by info.userid,info.spuid
 ```
+
+
 
 ### on的非等值连接
 
