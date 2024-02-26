@@ -1148,9 +1148,9 @@ varchar	  string		string
 
 text			string		string
 
-boolean    boolean   boolean
+boolean    boolean    boolean
 
-datetime	timestamp      
+datetime	timestamp      timestamp(java.sql包里的)
 
 timestamp timestamp
 

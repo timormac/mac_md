@@ -224,6 +224,15 @@ max.in.flght.request.per.connection =1
 
 ```
 
+### kafka拦截器
+
+```mysql
+#拦截器作用
+kafka消费者拦截器和消费后过滤，实现结果想通。不过一个流,每个处理都要进行数据清洗，那么设置一个拦截器更好。不需要每个业务都写这个代码。
+flink创建kafka流时，能设置参数执行拦截器的类,具体问gpt。
+消费者拦截器是在flink端执行，不是在kafka服务器执行
+```
+
 
 
 # producer

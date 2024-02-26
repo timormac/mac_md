@@ -132,6 +132,8 @@ java执行的时候，指定加载lib库路径，然后把用到的相关jar包�
 String className = "com.example.MyClass";
 // 步骤2：加载类
 Class<?> clazz = Class.forName(className);
+
+
 // 步骤3：创建对象
 Object object = clazz.newInstance();
 
@@ -141,13 +143,42 @@ Field[] fields = clazz.getDeclaredFields();
 for (Field Field:Fields) {
    field.getName();
 }
+
 //获取属性类型
-fields[1].getType();
+Class<?> type fields[1].getType();
+
+//判断属性类型
+type.equals( String.class )
+注意int和Integer是2个类型
 
 //设置对象属性,obj是instance创建的对象,1是值。注意参数2可以传递obj类型，object里面有个属性是class<?> 保存了真实类型
 fields[1].set(obj,1)
+  
+  
+//将接口dao对象,通过类名，转化为具体实现类 
+  String className = "com.example.MyClass";
+	Class<?> clazz = Class.forName(className);
 
+ //检测dao是不是真的clazz的实例
+	boolean b = clazz.isInstance( dao )
+  Object impl = clazz.cast( dao )
+  Field field = clazz.getDeclaredField( "属性名"  );
+  //获取对应的属性
+	Object value = field.get(impl)
+    
+  Method  method= clazz.getDeclaredMethod( "方法名"  )；
+  //调用方法
+   method.invoke(impl)
+    
+    
+    
+  
+  
 ```
+
+
+
+
 
 
 
@@ -213,12 +244,28 @@ maven项目打包时在pom中添加
 
 ### 修改源码并打包
 
-
-
 ```sql
 #下载-source源码包
 flink-1.17-source.jar 带source的，里面都是java原文件，而不是.class字节码文件
 ```
+
+# 代码设计模式
+
+### mysql查询工具
+
+```mysql
+#目标
+输入表名queryTable(),然后调方法queryColumnName(参数不固定),然后调方法FilterCloumnValue(参数不固定)
+怕别人不知道使用规则，可以学习flink中的join设计模式。
+queryTable()后返回一个新类，只有一个queryColumnName方法，调用后返回个新类只有FilterCloumnValue方法,
+这样就不怕用户不了解使用规则了。如果所有方法都写在一个类里，用户可能乱调用方法， 弄奇怪的排列组合
+                                                       
+
+
+
+```
+
+
 
 
 

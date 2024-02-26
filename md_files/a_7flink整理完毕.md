@@ -209,7 +209,23 @@ public class KafkaSink  implements StatefulSink,TwoPhaseCommittingSink{}
 
 
 
-# flink优化
+# flink业务场景模拟
+
+```mysql
+#维度表或实时表查询优化
+如果一个维度表或者实时表很大,并且需要提供随时查询,总数据放入hbase中,做个redis缓存(存1天)，大部分数据可以从redis查，查不到的再去hbase查。因为大部分是几天内数据,所以减少hbase访问
+
+
+
+
+
+```
+
+
+
+
+
+
 
 
 
@@ -452,12 +468,70 @@ map(s->s).slotSharingGroup("1")
 
 # DataStream
 
+### 详细的检查点文献
+
+```
+https://www.cnblogs.com/liugp/p/16260166.html#%E4%B8%80flink%E4%B8%AD%E7%9A%84%E7%8A%B6%E6%80%81
+可以去看一下
+```
+
+
+
+### keyed流算子
+
+```mysql
+#connect
+keyed流进行connect必须也是keyed流(不然会报错),通过process方法,自己存状态，可以实现2流join。
+现已确认keyed的流，每个key单独维护一个自己keyed状态。和并行度无关，只和key有关
+
+#join(待整理)
+相同窗口,2个流中,key都存在才会关联成功
+
+#intervalJoin
+当s1流数据，前后5秒内,来数据就能join到，不然join不到
+S1.keyby(id)
+	.intervalJoin( s1.keyby(id) )
+	.between(Time.seconds(-5),Time.seconds(-5))
+	.process()
+	
+底层就是用2个keyed流进行connect后，实现的可以自己实现一下	
+
+```
+
+
+
+### 非keyed流算子
+
+```mysql
+#connect
+
+
+
+```
+
+
+
+
+
 ### 窗口函数
 
 ```sql
 #类型模式
 计数，计时间
 
+#计数窗口
+计数窗口，是全局窗口,执行countWindowAll后，并行度变为1。
+如果想多并行度进行，keyby后，执行countWindow方法
+
+#keyby流也有计数窗口
+对于keyby后的的流,计时窗口，当不同的key其中一个水位线到了，会触发所有key的窗口关闭，好管理。
+如果keyby后计数窗口，那么每个key都有自己的计数器，并且需要独自的窗口关闭，不能关闭所有key
+
+#全局窗口globalwindow
+会把key相同的放在一个窗口。默认是不关闭的，需要自己定义触发器。countWindow就是globalwindow实现的。
+
+#底层窗口
+滑动，滚动，都是窗口分配器+触发器实现的，没有基础实现的窗口接口了
 
 
 
@@ -523,6 +597,15 @@ keyed的流注册状态，每个key单独享有一个状态。
 
 
 
+### flink状态管理
+
+```mysql
+托管状态,自控状态
+托管分区keyed和operateState
+```
+
+
+
 ### TTL
 
 ```sql
@@ -544,37 +627,19 @@ TTL为了防止内存无限制扩大
 
 ### statebackend
 
-总结一下，状态后端负责实时管理状态，检查点负责周期性地持久化状态以便故障恢复，而 Changelog 提供了一种更细粒度的状态变化记录，允许在检查点之间进行更快的状态恢复。这三者共同构成了 Flink 的强大容错和状态管理体系。
+
 
 ```sql
- #作用
- 状态后端负责管理和维护所有的状态信息。它定义了状态的存储方式（内存、磁盘等），以及状态在故障恢复时如何被访问和恢复。
+ #误区
+ 状态后端只是选择状态的存储方式,比如memoryStateBackend,HashMapStateBackend都是设置内存级的后端，为了快
+ fsStateBackend  fs是为了省内存,只维护小状态，大状态将数据存在磁盘临时读取,
+ RocksDBStateBackend,EmbeddedRocksDB,是hbase理念，设置缓存,有近乎内存的速度，大部分还是存在磁盘。
  
- #声明状态后端
- 如果注册了状态变量，当不设置状态后端时，默认时memoryStateBackend,这个不好用。在进行checkpoint时，状态会被序列化后存储到JobManager的内存中，会出现丢失情况
- #HashMapStateBackend
- 我们可以手动设置HashMapStateBackend（将状态保存在 JVM 堆内存中)，与检查点存储，如FileSystemCheckpointStorage结合用
- HashMapStateBackend有内存的速度，还可以定期存在文件中，使用只用内存，存文件中是用来恢复。
- #EmbeddedRocksDB
- EmbeddedRocksDB是走内嵌的rocksDB磁盘存状态后端的,和hbase差不多有缓存，可以存很大的状态后端，而hashmap不行。
- 虽然已经存在本地的rocksdb，但是因为节点可能故障，所以还是要存在检查点里面。
+ 并且source端的消费进度,是检查点的barrier记录的,状态后端不会记录source消费进度
+ 就算设置为fsStateBackend,状态存在本地磁盘。不设置checkpoint,故障重启时flink也不知道从哪个位置加载状态。
  
- RocksDBStateBackend，memoryStateBackend，fsStateBackend已经过时了。目前推荐的是hashmap和EmbeddedRocksDB
- 
- #statebackend和checkpoint关系
- 当你选择状态后端模式时，如果你不开启checkpoint，那么将不会把状态后端保存，故障时会出现无法恢复(即使是rockdb也可能节点故障)
- 当你开启checkpoint后，会自动将状态后端存在checkpoint的指定位置，checkpoint主要就是存状态后端的的，其次还有一些其他的东西。
- 
+RocksDBStateBackend，memoryStateBackend，fsStateBackend已经过时了。目前推荐的是hashmap和EmbeddedRocksDB
 ```
-
-### changelog
-
-- **作用**: Changelog 是 Flink 1.12 引入的一种新的状态后端（如 `ChangelogStateBackend`），它记录状态的变化日志，不仅仅是定期的检查点。这使得 Flink 可以在故障恢复时更加灵活和高效，因为它可以使用这些变化日志来恢复状态，而不是从完整的检查点状态开始。
-- **实现**: Changelog 状态后端通常与其他状态后端结合使用，比如 `HashMapStateBackend` 或 `RocksDBStateBackend`。它记录每个状态更新的变化日志，并定期与检查点一起持久化。这样，即使在检查点之间发生故障，也能够利用这些变化日志来恢复到最新的状态。
-
-每次保存checkpoint都是完整保存，那么用时太久了，开启changelog可以只保存状态的变化，更快的保存。
-
-要引入依赖，并且代码里开启
 
 
 
@@ -588,9 +653,17 @@ checkpoint就是对状态的快照保存。statebackend就是状态的使用以�
 
 
 
-##### barrier三种方式(有未看懂的)
+##### barrier三种方式(未看懂)
 
-这个和代码里的checkpoint的mode有什么关系，算法怎么实现的。
+去看前面详细文章地址，有图。看懂了为什么要对齐了，因为不然状态记录的不准。
+
+exactly once的实现，就是通过barrier对齐。
+
+barrier对齐，最大的难度就是多并行度，下一个算子变为1个并行多。比如2个并行度合并到1个。当a的barrier来时，不会记录状态，这时候a后面的数据不进行处理进行缓存，当b的barrier来了,这时记录此时算子所有的状态.
+
+
+
+atleast once就是不等barrier对齐，所以可能会重复消费的。
 
 ```sql
 barrier是一个触发检查点保存的数据结构,由jobmaster发送给所有task的source源头,保存source的偏移量，遇到shuffle会广播给下游所有shuffle算子。
@@ -612,6 +685,15 @@ exactly-once能保证事件只被消费一次,at-least-once可能出现重复消
 和checkpoint原理一样，不过手动触发，具体场景是调整并行度，更新flink版本等。
 
 手动触发操作，在word里
+
+### changelog
+
+- **作用**: Changelog 是 Flink 1.12 引入的一种新的状态后端（如 `ChangelogStateBackend`），它记录状态的变化日志，不仅仅是定期的检查点。这使得 Flink 可以在故障恢复时更加灵活和高效，因为它可以使用这些变化日志来恢复状态，而不是从完整的检查点状态开始。
+- **实现**: Changelog 状态后端通常与其他状态后端结合使用，比如 `HashMapStateBackend` 或 `RocksDBStateBackend`。它记录每个状态更新的变化日志，并定期与检查点一起持久化。这样，即使在检查点之间发生故障，也能够利用这些变化日志来恢复到最新的状态。
+
+每次保存checkpoint都是完整保存，那么用时太久了，开启changelog可以只保存状态的变化，更快的保存。
+
+要引入依赖，并且代码里开启
 
 
 

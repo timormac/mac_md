@@ -384,6 +384,17 @@ spark.executor.mermory 堆内存，计算和存储的内存  占总的0.9
 
 
 
+# spark不只对接hive
+
+```mysql
+#对接hudi
+特斯拉的数据仓库，是sparksql做的。用来对接hudi，用hudi来数据仓库管理。
+那么元数据怎么办呢？
+
+
+
+```
+
 
 
 
