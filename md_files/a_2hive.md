@@ -1754,6 +1754,27 @@ sql : select * from tmp  where id in (select id from tmp_copy) as t2;
 
 
 
+
+
+# 可执行写法
+
+### 创建视图
+
+```mysql
+#hive中有视图，没有存储过程
+
+create view v1 as select * from t1 where id >100;
+```
+
+### with 临时表
+
+```sql
+with new_tb1 as (select * from student where sex='male' and money>5000),
+    new_tb2 as (select * from student where sex='female' and money>5000)
+select name,age,money,sex from new_tb1
+// with里的语句当作临时表
+```
+
 ### cast转换
 
 一般用于把string转为int，比如有的字段存为string， 实际是数字，有时候需要order的时候，18 和2如果是字符串 那么排序 18是小于2的。如果是把字符串转为数字，就会是null
@@ -1768,15 +1789,6 @@ distribute by + sort by就是该替代方案，被distribute by设定的字段�
 select * from tb distribute by  areaid  sort by num desc; 
 ```
 
-### with 临时表
-
-```sql
-with new_tb1 as (select * from student where sex='male' and money>5000),
-    new_tb2 as (select * from student where sex='female' and money>5000)
-select name,age,money,sex from new_tb1
-// with里的语句当作临时表
-```
-
 ### union/union all
 
 ```sql
@@ -1788,10 +1800,6 @@ select name,age,money,sex from new_tb1
 对于数组,只有当两个数组的元素完全相同，并且元素的顺序也相同，才会被视为重复的行。
 对于包含Map、Struct等复杂集合类型的字段，UNION操作符在Hive中无法直接进行去重判断。在这种情况下，UNION会将所有行都保留，无论它们是否重复。
 ```
-
-
-
-# 可执行写法
 
 ### in查询
 

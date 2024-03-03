@@ -430,7 +430,7 @@ if( v.value() == null || v==null ){  return ""; }
 
 目录：日期库   json库  Math库  String库
 
-日期库
+###### 日期库
 
 ```java
 //日期库
@@ -460,7 +460,7 @@ int minute = calendar.get(Calendar.MINUTE);
 int second = calendar.get(Calendar.SECOND);
 ```
 
-json库
+###### json库
 
 ```java
 //将字符串转为json
@@ -489,13 +489,13 @@ String objectString="{\"address\":\"北京市\",\"age\":20,\"email\":\"zs@sina.c
 Student student = JSON.parseObject(objectString, Student.class);
 ```
 
-Math库
+###### Math库
 
 ```java
 Math.max（a,b）
 ```
 
-String库
+###### String库
 
 ```java
 	//字符串格式化

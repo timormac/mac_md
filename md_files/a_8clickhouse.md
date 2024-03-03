@@ -2,6 +2,22 @@
 
 
 
+# 个人理解
+
+```mysql
+#对标
+clickhouse对标的是doris,都是分布式mpp数据库,olap引擎
+
+#查询场景
+对于一些数据查询，比如实时统计订单表今天累积销售额，去重人数
+方案一：把etl后的数据存在clickhouse,doris,hbase。通过clickhouse和doris引擎临时查询。或者phoenix查询hbase，不过hbase并不			善于做这个事情
+方案二：直接把要的指标结果用flink的状态去累积计算值，并且定期去刷写到外部系统
+
+
+```
+
+
+
 # 简介
 
 #### 文章相关

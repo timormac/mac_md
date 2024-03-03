@@ -487,9 +487,18 @@ resume project  作用就是快进到你打的下一个断点，在左侧扳手�
 
 #### idea导入项目
 
+```mysql
+#open手动设置
 当open一个项目时，没有识别成 一个项目，那么在project strcture里面，手动指定module是哪个目录
-
 idea导入项目的时候，如果maven等无法下载。可以把/idea和。iml文件删除。重新导入，idea重新构建项目。
+
+#import 自动识别
+勾选import => external 外部框架=>选择maven,就可以了，比open方便很多
+```
+
+
+
+
 
 
 

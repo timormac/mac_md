@@ -67,9 +67,9 @@ val groupBy:RDD[(String,Iterable[String] )] = flatmap.groupBy(s=>s)
 
 stream流中，每5秒，就会创建一个mysql连接，这个效率太低了，有没有更好的？
 
-上面用的是mappartition。
+上面用的是mappartition。网上说用foreachPartition，每个并行度只执行一次，这个试试去
 
-```
+```mysql
 在Spark Streaming中，同一个executor的不同批次确实是在同一个JVM进程中顺序执行的，但每个批次是作为独立的Spark作业提交的。这意味着每个批次开始时，Spark会创建新的RDD、DAG和任务，然后这些任务被分发到各个executor上执行。在每个批次结束后，与该批次相关的资源通常会被释放，包括广播变量和累加器等。因此，Spark的设计并不是为了在批次之间保持长期运行的状态，如打开的数据库连接。
 
 然而，你可以通过一些策略来实现类似“共享连接”的效果：
@@ -341,8 +341,6 @@ bin/spark-submit \
 ```java
 //执行模式
 --master local[*]     //可选  yarn  local[*]  注意yarn模式分client是本地dirver测试用和cluser是集群模式
-  
---
 --executor-memory 1G
 --total-executor-cores 2
 --executor-cores
@@ -501,4 +499,11 @@ spark中的group by key等是对当前批次的进行key by ，那么我想今�
 
 #### 手动实现侧输出流
 
-#### 
+# sparkSQL调优
+
+```mysql
+
+
+
+```
+

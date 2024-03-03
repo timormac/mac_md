@@ -1,10 +1,43 @@
-# 整理进度
+# 个人理解
 
-a3包的广播
+```mysql
+#框架选择
+每5秒实时统计当天订单交易数，去重用户数。
+目前有有2个方案，第一个通过flink实时把etl后的订单写到clickhouse中，然后每5秒通过clickhouse执行临时sql查询，
+第二个方案，是通过flink框架，内部计算当天累积值，然后每5秒，刷写到mysql中，然后后台查询mysql去更新数据。
+
+方案二，速度最快,不过开发效率低。
+当实时需求不多,并且统计维度不多，同一个订单表任务不多时，flink+mysql,每个都手动就可以，不引入额外框架
+
+方案一,当未知任务多，并且同一个表统计维度很多，那还是存clickhouse去临时存吧
+
+```
 
 
 
 # 问题待解决
+
+### windowJoin又是什么
+
+```
+1. **Window Join**：在有限的窗口范围内连接两个流。窗口可以是时间窗口（例如，10分钟的滚动窗口）或者是其他类型的窗口。窗口 join 通常用于连接两个流的元素，这些元素在某个时间段内是相关的。
+
+
+3. **Join Function**：可以自定义一个 join 函数来指定如何连接两个流的元素。这通常是在 `DataStream` API 中使用 `join` 操作时进行的。
+
+4. **CoGroup Function**：类似于 SQL 中的 `FULL OUTER JOIN`，`coGroup` 允许你为两个流的每个键分别分组元素，然后可以在结果迭代器上执行操作。
+
+```
+
+### intervaljoin关联不到数据
+
+```
+关联不到
+```
+
+
+
+
 
 ### yarn-session无法提交job
 
@@ -16,57 +49,6 @@ a3包的广播
 
 
 
-### 计数时间滑动窗口怎么做
-
-需求:1分钟内  登陆超过35次认为是爬虫
-
-直观思路   每来一个事件开个1分钟的窗口,窗口关闭统计次数和35比较
-
-目前不能实现，需要转换思路。
-
-### intervalJoin又是什么
-
-```
-Apache Flink 是一个流处理框架，它支持多种类型的流数据连接（join）操作。在 `keyBy` 操作之后，流数据被分区到不同的任务中，以便可以进行更有效的处理。以下是 Flink 中 `keyBy` 之后可以使用的一些 join 操作类型及其区别：
-
-1. **Window Join**：在有限的窗口范围内连接两个流。窗口可以是时间窗口（例如，10分钟的滚动窗口）或者是其他类型的窗口。窗口 join 通常用于连接两个流的元素，这些元素在某个时间段内是相关的。
-
-2. **Interval Join**：在指定的时间区间内连接两个流。与窗口 join 类似，但是它允许每个元素定义一个时间范围，而不是使用固定的窗口大小。
-
-3. **Join Function**：可以自定义一个 join 函数来指定如何连接两个流的元素。这通常是在 `DataStream` API 中使用 `join` 操作时进行的。
-
-4. **CoGroup Function**：类似于 SQL 中的 `FULL OUTER JOIN`，`coGroup` 允许你为两个流的每个键分别分组元素，然后可以在结果迭代器上执行操作。
-
-这些 join 操作的主要区别在于它们如何处理时间和窗口约束，以及它们如何处理流中的元素。
-
-除了 join 操作，Flink 还提供了 `connect` 操作，它可以将两个保持它们类型的流连接在一起。`connect` 与 join 的主要区别在于：
-
-- **Connect**：
-  - `connect` 操作只能用于两个流。
-  - 连接后的流会保持各自的数据类型，生成一个 `ConnectedStreams` 对象。
-  - `ConnectedStreams` 可以使用 `CoMap` 或 `CoFlatMap` 函数来处理两个流的数据，这些函数可以处理两种类型的数据，并且可以共享状态。
-  - `connect` 更适用于当两个流的数据需要被共同处理，但不需要按键进行连接的情况。
-
-- **Join**：
-  - join 操作是针对两个流的元素按键进行配对。
-  - join 结果是一个新的数据流，并且结果流的类型是两个输入流元素类型的组合。
-  - join 操作通常用于当你需要将两个流中相关的元素结合起来时。
-
-总之，选择 join 还是 connect 取决于你的具体需求，例如是否需要按键连接元素、是否需要处理不同类型的数据流，以及是否需要在特定的时间窗口内处理数据。
-```
-
-
-
-### connect是怎么运行的
-
-应该有理解错误,connect流和join流是2个东西。最好别弄混了
-
-2个keyed流,会把key同的流数据放到一块， 每个key单独一个小区域,  可以理解
-
-那么当一个keyed流，一个dataStream，这个connect怎么走呢？？
-
-
-
 ### FlinkKafkaConsumer过时
 
 实现sourceFunction的kafka有3个,FlinkKafkaShuffleConsumer，FlinkKafkaConsumer，FlinkKafkaConsumerBase
@@ -75,21 +57,88 @@ FlinkKafkaConsumer过时了
 
 FlinkKafkaShuffleConsumer是他的继承类，不过没有public构造器,也没找到buider不知道怎么办
 
+### 可用slut为0但是能提交任务
+
+yarn-application模式，可用slots是0，但是能提交一个3并行度的任务,不知道为什么
+
+只能提交第一个任务，第二个任务提交时，提交不了了，一直卡在了，显示
+
+Deployment took more than 60 seconds. Please check if the requested resources are available in the YARN cluster
+Deployment took more than 120 seconds. Please check if the requested resources are available in the YARN cluster
 
 
-### 不keyby想用mapstate
 
-不keyby想用state会报错
-
+如果时先启动yarn-session服务器，发现连第一个任务都启动不了，不知道为什么，一直卡在申请container
 
 
-### checkpoint的2种barrier区别
 
-这个没搞懂
+### log4j日志不打印
+
+代码里指定了log4j打印目录，在idea能自己创建目录，上传到集群，log日志无法生成
+
+
+
+
+
+### 无继承关系却满足范型
+
+```
+ //问题 :forGenerator方法需要传入一个WatermarkGeneratorSupplier，但是老师模仿的实现的是WatermarkGenerator
+ //这2个不一样WatermarkGenerator和WatermarkGeneratorSupplier没有父子关系为什么能传进去
+// WatermarkStrategy.forGenerator()
+```
+
+下面问题也是一样的
+
+```java
+WatermarkStrategy<WaterSensor> watermarkStrategy = WatermarkStrategy
+    .<WaterSensor>forBoundedOutOfOrderness(Duration.ofSeconds(2))
+    .withTimestampAssigner(new SerializableTimestampAssigner<WaterSensor>() {
+      @Override
+      public long extractTimestamp(WaterSensor element, long recordTimestamp) {
+      });
+ //WatermarkStrategy.forBoundedOutOfOrderness()方法，点进源码看到的是:
+ static <T> WatermarkStrategy<T> forBoundedOutOfOrderness(Duration maxOutOfOrderness) {
+        return (ctx) -> new BoundedOutOfOrdernessWatermarks<>(maxOutOfOrderness);
+    }
+   //源码显示的方法返回值是WatermarkStrategy，不过new BoundedOutOfOrdernessWatermarks<>(maxOutOfOrderness)，点进去并没有实现WatermarkStrategy接口，看不懂了，为什么new BoundedOutOfOrdernessWatermarks能用WatermarkStrategy接
+   
+   BoundedOutOfOrdernessWatermarks类,实现了WatermarkGenerator接口，并且这个接口是个初始接口，和watermarkStrategy没关系
+  class BoundedOutOfOrdernessWatermarks<T> implements WatermarkGenerator<T>    
+```
+
+
+
+### watermark传递机制
+
+flink中waterMark是怎么传递的，比如先map 然后 process，不同算子之间，是根据流过的数据来更新watermark吗
+
+
+
+### flink-session起不来
+
+更改配置文件后连yarn-sesion都起不来
+为了资源够slut,更改flink配置文件，发现起不来了。后面查阅发现，好像比如jobmanager和taskmanager有一定内存比例的，而且分给某些线程的内存要在固定60m-256m范围之间，因为只改了jobmanager和taskmanager的内存配置，所以起不来了。
+
+要怎么配置内存占比呢，才能让集群跑起来
 
 
 
 # 问题已解决(待回顾)
+
+### 定时器重复注册
+
+```mysql
+#定时器秒触发
+因为设置的定时器为registerTimeTimer(5000L)，应该是事件时间+5000L，不然系统时间肯定是大于5000ms的。
+
+#定时器是否覆盖
+flink对于keyby后的流，是按key和定时器的触发时间，来作为map的key存储的。
+前后多条数据，你都设置同一个触发时间，会发生覆盖。
+但是一般都是设置，事件时间+定时间隔，所以这种情况基本遇不到，极端情况会有
+```
+
+
 
 
 
@@ -184,6 +233,10 @@ reduce/Aggregate 是为了代码简洁
 * 为了避免这种情况可以设置空闲时间等待.withIdleness(Duration.ofSeconds(10))
 * //空闲等待10s，即当10s内其他分区没有数据更新事件时间是，等10s，按最大的时间时间同步到其他没数据的分区
 
+### kafka的配置在哪找
+在import org.apache.kafka.clients.consumer.ConsumerConfig里可以看到，property里面可以设置哪些配置
+
+
 #checkpoint单独使用
 即使没注册状态,checkpoint也可以用，比如记录kafka的消费,有checkpoint提交偏移量，可以保证不丢。
 checkpoint也能结合下游事务，比如两阶段提交，flink会自动结合checkpoint做事务。
@@ -203,48 +256,48 @@ checkpoint也能结合下游事务，比如两阶段提交，flink会自动结�
 public class KafkaSink  implements StatefulSink,TwoPhaseCommittingSink{}
 这两个接口实现的是connector.sink2.Sink,是2个不同的包的Sink接口，但是idea没报错。
 
+### 算子里异常不会终止
+代码Flink_learing中a9包的A2代码，map里出异常1/0，不会终止，而是重复执行方法体，不知道是不是因为checkpoint 。
+注意：如果设置了检查点，它可以从最近的检查点恢复，也就是说当你处理1，2，3，异常数据时，会再执行一次1，2，3数据，
+有重复的数据，比如超时重试等。
+
 ```
 
 ### 复杂问题
 
-
-
-# flink业务场景模拟
-
 ```mysql
-#维度表或实时表查询优化
-如果一个维度表或者实时表很大,并且需要提供随时查询,总数据放入hbase中,做个redis缓存(存1天)，大部分数据可以从redis查，查不到的再去hbase查。因为大部分是几天内数据,所以减少hbase访问
-
-
-
-
 
 ```
 
 
 
+# flink版本特性
+
+Flink是一个开源的流处理和批处理框架，用于大规模数据处理和分析。下面是Flink的一些重要版本及其主要特性的概述：
+
+1. Flink 1.x系列：这是Flink的初始版本，引入了流处理和批处理的功能。其中一些重要特性包括：
+   - 流处理：提供了基于事件时间的流处理，支持窗口操作、状态管理等功能。
+   - 批处理：支持批处理作业，与流处理作业可以无缝切换。
+   - 事件时间处理：支持基于事件发生时间的数据处理。
+
+2. Flink 1.1.x系列：这是Flink的重要升级版本，引入了一些关键的改进和新特性。其中一些重要的特性包括：
+   - 改进的流处理引擎：提升了流处理的性能和稳定性。
+   - 改进的批处理引擎：提升了批处理的性能和稳定性。
+   - 改进的状态管理：引入了增量快照（Incremental Checkpointing）技术，提高了状态管理的效率和可靠性。
+
+3. Flink 1.2.x系列：这是Flink的进一步升级版本，带来了一些重要的改进和新特性。其中一些重要的特性包括：
+   - 改进的流处理引擎：引入了事件时间处理的改进和优化，提高了处理的准确性和性能。
+   - 改进的批处理引擎：增加了更多的批处理优化，提高了批处理的性能。
+   - 改进的状态后端：引入了RocksDB作为默认的状态后端，提供了更好的状态管理性能和可靠性。
+
+4. Flink 1.3.x系列：这是Flink的又一个重要升级版本，带来了一些关键的改进和新特性。其中一些重要的特性包括：
+   - 改进的流处理引擎：引入了异步快照（Asynchronous Checkpointing）技术，提高了流处理的容错性和性能。
+   - 改进的批处理引擎：增加了更多的批处理优化和功能，提高了批处理的性能和灵活性。
+   - 改进的状态管理：引入了增量快照的改进，提高了状态管理的效率和可靠性。
+
+这些是Flink版本中的一些重要特性，升级到较新的版本可能会带来更好的性能、功能和开发体验。然而，升级也可能需要进行一些工作，如代码迁移、配置更改、应用程序兼容性测试等。因此，在决定是否升级之前，建议您进行充分的评估和测试，以确保升级对您的业务有实际的益处。同时，还应该考虑与其他系统和工具的兼容性，以确保整个技术栈的稳定性和一致性。
 
 
-
-
-
-
-# flink项目
-
-### 问题待解决
-
-```mysql
-#多并行度的join流程
-flink是流处理，可以2个流join得到join流，再process里定义2个map状态。相比spark的2流join方便的多
-问题：多并行度多个流join,没有做keyby操作,万一2个流没进入一个joinstream怎么办？
-
-#用connect实现多并行度join关联
-flink是流处理，可以2个流connect得到conn流。因为多并行度需要keyby会对key取hash进行分配并行度。
-然后再process里定义2个map进行存储，流数据进入，进行关联
-
-#什么时候用窗口
-只有需要滑动，滚动等条件时才用窗口
-```
 
 
 
@@ -272,16 +325,6 @@ FileSink实现了两阶段提交和预写日志接口：TwoPhaseCommittingSink +
 但是单独一个预写日志+两阶段提交是无法保证精准事务的，可能会出现重复
 因为hdfs是不支持事务的
 ```
-
-
-
-### kafka精准一次
-
-写入kafka时
-
-
-
-
 
 # flink-yarn模式
 
@@ -639,6 +682,14 @@ TTL为了防止内存无限制扩大
  就算设置为fsStateBackend,状态存在本地磁盘。不设置checkpoint,故障重启时flink也不知道从哪个位置加载状态。
  
 RocksDBStateBackend，memoryStateBackend，fsStateBackend已经过时了。目前推荐的是hashmap和EmbeddedRocksDB
+
+ fsStateBackend
+ RocksDBStateBackend
+memoryStateBackend
+HashMapStateBackend
+这4个区别，hash和memory都是把数据直接存在内存上。而rockdb是个数据库体系，只存索引，具体的数据存在硬盘，查询时先查索引，然后再查磁盘位置。
+RocksDBStateBackend适合存大状态
+
 ```
 
 
@@ -650,10 +701,15 @@ checkpoint就是对状态的快照保存。statebackend就是状态的使用以�
 - **作用**: 检查点是 Flink 容错机制的核心。它是在特定时间点对状态的一致性快照。如果发生故障，Flink 可以从最近的检查点恢复状态和计算，从而保证了数据处理的精确一次性（exactly-once）语义。
 - **实现**: 当执行检查点时，Flink 会调用状态后端来持久化状态信息。对于 `HashMapStateBackend`，状态被持久化到配置的检查点存储位置（如分布式文件系统）。对于 `RocksDBStateBackend`，状态已经存储在磁盘上，因此检查点主要涉及将状态的增量变化持久化到远程存储。
 - 检查点会存储哪些数据：状态，kafka消费偏移量等
+- Operator State: 每个操作符（如map, reduce, filter等）可以有自己的状态，这些状态包括列表、映射等数据结构，用于保存中间计算结果。在checkpoint时，这些状态会被保存。
+
+  Keyed State: 对于需要根据键值进行分区的操作符，Flink 会为每个键值维护一个状态。这种状态通常用于需要按键分组的操作，如 keyed windows 或 aggregations。checkpoint 会保存所有键的状态。
+
+  Buffered Data: 数据在流向下一个操作符之前可能会在网络缓冲区中缓存。在checkpoint时，这些缓存的数据也会被保存，以确保在恢复时数据不会丢失。
 
 
 
-##### barrier三种方式(未看懂)
+##### barrier三种方式
 
 去看前面详细文章地址，有图。看懂了为什么要对齐了，因为不然状态记录的不准。
 
@@ -701,11 +757,40 @@ exactly-once能保证事件只被消费一次,at-least-once可能出现重复消
 
 
 
+
+
 # TableAPI
 
-### 查看执行计划
+### 待解决问题
+
+```mysql
+#找表不到
+2个kafka流能正常join，但是一个kafka lookup join另一个mysql，显示找不到kafka的表。
+
+#建表和查询一起
+excute( create table select * from a )和 sqlQuery (select * from a)之后再执行createTemporyview区别？？？
+我现在想create一个table，通过select语句好像不行,建表一定要指定类型。可以先query查询，然后再创建视图来做
 
 ```
+
+### 细节需注意
+
+```mysql
+#upsert-kafka
+uperset-kafka能更新kafka消息，如果是实时的，我已经消费了怎么撤回呢？还是我理解错了
+
+#sql中创建表要求
+1 字段和类型中间只能有1个空格，不能多
+2 data map<String,String>
+3 maxwell监控的字段有table,type,建表时应该用‘table’使用时也是‘table’
+4 关键字 partition,order注意， mock_order as order，检验的时候报错
+```
+
+
+
+### explain执行计划
+
+```mysql
 是的，Flink 提供了 `EXPLAIN` 命令，它可以用来查看 Table API 或 SQL 查询的逻辑和物理执行计划。执行计划为你提供了查询的详细信息，包括查询将如何被转化为底层的 DataStream API 操作。
 
 要使用 `EXPLAIN` 命令，你可以在 TableEnvironment 上调用 `explain` 方法。这个方法可以接受一个 Table 对象或者一个 String 类型的 SQL 查询，并返回一个描述执行计划的字符串。
@@ -720,5 +805,126 @@ System.out.println(explanation);
 3. **Physical Plan**：这是逻辑计划的物理实现，它包括了具体的算子和它们的配置，比如过滤、聚合、连接等。
 4. **Execution Plan**：这是最终的执行计划，它会被提交到 Flink 集群上执行。这部分包括了任务的并行度、数据的分区策略等具体的运行时信息。
 通过查看这些执行计划，你可以更好地理解 Flink 是如何处理你的查询的，以及可能在哪些地方进行了优化。这对于调试查询性能问题非常有用。
+
+
+#案例：2个kafka流join
+ select 
+ mock_order.data['orderno'],
+mock_order.data['spuid'],
+mock_cupon.data['activity']
+from mock_order 
+join mock_cupon 
+on mock_order.data['orderno'] = mock_cupon.data['orderno'] 
+
+#执行计划
+== Abstract Syntax Tree ==
+LogicalProject(EXPR$0=[ITEM($0, _UTF-16LE'orderno')], EXPR$1=[ITEM($0, _UTF-16LE'spuid')], EXPR$2=[ITEM($2, _UTF-16LE'activity')])
++- LogicalJoin(condition=[=($1, $3)], joinType=[inner])
+   :- LogicalProject(data=[$2], $f1=[ITEM($2, _UTF-16LE'orderno')])
+   :  +- LogicalFilter(condition=[=($1, _UTF-16LE'mock_order')])
+   :     +- LogicalTableScan(table=[[default_catalog, default_database, kafka_maxwell]])
+   +- LogicalProject(data=[$2], $f1=[ITEM($2, _UTF-16LE'orderno')])
+      +- LogicalFilter(condition=[=($1, _UTF-16LE'mock_cupon')])
+         +- LogicalTableScan(table=[[default_catalog, default_database, kafka_maxwell]])
+
+== Optimized Physical Plan ==
+Calc(select=[ITEM(data, _UTF-16LE'orderno') AS EXPR$0, ITEM(data, _UTF-16LE'spuid') AS EXPR$1, ITEM(data0, _UTF-16LE'activity') AS EXPR$2])
++- Join(joinType=[InnerJoin], where=[=($f1, $f10)], select=[data, $f1, data0, $f10], leftInputSpec=[NoUniqueKey], rightInputSpec=[NoUniqueKey])
+   :- Exchange(distribution=[hash[$f1]])
+   :  +- Calc(select=[data, ITEM(data, _UTF-16LE'orderno') AS $f1], where=[=(table, _UTF-16LE'mock_order':VARCHAR(2147483647) CHARACTER SET "UTF-16LE")])
+   :     +- TableSourceScan(table=[[default_catalog, default_database, kafka_maxwell]], fields=[database, table, data, type, ts])
+   +- Exchange(distribution=[hash[$f1]])
+      +- Calc(select=[data, ITEM(data, _UTF-16LE'orderno') AS $f1], where=[=(table, _UTF-16LE'mock_cupon':VARCHAR(2147483647) CHARACTER SET "UTF-16LE")])
+         +- TableSourceScan(table=[[default_catalog, default_database, kafka_maxwell]], fields=[database, table, data, type, ts])
+
+== Optimized Execution Plan ==
+Calc(select=[ITEM(data, 'orderno') AS EXPR$0, ITEM(data, 'spuid') AS EXPR$1, ITEM(data0, 'activity') AS EXPR$2])
++- Join(joinType=[InnerJoin], where=[($f1 = $f10)], select=[data, $f1, data0, $f10], leftInputSpec=[NoUniqueKey], rightInputSpec=[NoUniqueKey])
+   :- Exchange(distribution=[hash[$f1]])
+   :  +- Calc(select=[data, ITEM(data, 'orderno') AS $f1], where=[(table = 'mock_order')])
+   :     +- TableSourceScan(table=[[default_catalog, default_database, kafka_maxwell]], fields=[database, table, data, type, ts])(reuse_id=[1])
+   +- Exchange(distribution=[hash[$f1]])
+      +- Calc(select=[data, ITEM(data, 'orderno') AS $f1], where=[(table = 'mock_cupon')])
+         +- Reused(reference_id=[1])
 ```
+
+
+
+### 数据类型
+
+```mysql
+#map
+声明 data map<String,String>
+使用 data["id"]
+```
+
+
+
+
+
+### FlinkTable优化
+
+```mysql
+#窗口优化
+滑动窗口的时候步长和时间要是整数，这样TVF的API会优化，把滑动窗口，切分成多个滚动窗口，这样不会有太多重复数据
+
+#tableAPi设置checkPoint
+和流一样，在env设置checkpoint
+```
+
+# sql语法
+
+#### 基本语法
+
+```mysql
+#代码语法
+tableEnv.excuteSql() 执行sql，返回一个结果集
+tableEnv.sqlQuery() 返回的是一个table，不一样
+tableEnv.explainSql()
+
+#设置checkpoint
+直接env设置checkpoint就行
+
+#设置ttl
+目前只支持窗口设置ttl吗？不清楚
+
+
+#sql语法
+create tb(
+	id string,
+  pt as proctime(), --处理时间
+  et as cast(currrent_timestamp as timestamp(3)), --当前时间转为timestamp(3)
+  watermark for et as et - interval '0.1' second , --watermark延迟，把上面的et作为事件时间
+
+)
+
+```
+
+
+
+#### join的几种
+
+~~~mysql
+### join的几种
+
+```mysql
+#lookup join
+当2个表通过lookup join时，会根据关联key，实时查询维度表。lookup join后的就是维度表
+
+固定写法：
+SELECT o.order_id, o.total, c.country, c.zip
+FROM Orders AS o
+JOIN Customers FOR SYSTEM_TIME AS OF o.proc_time AS c
+ON o.customer_id = c.id;
+
+Lookup Join（临时访问）:
+当你在Flink SQL中执行一个维度表关联查询时，默认情况下，Flink会使用所谓的lookup join。这意味着对于流中的每条消息，Flink会发起一个查询到外部系统（在这种情况下是MySQL）来检索关联的维度数据。这是一个同步的操作，可能会因为网络延迟或外部系统的查询性能而影响整体的处理延迟。
+Temporal Join with Versioned Tables:
+如果你使用时态表（temporal table）的概念，Flink可以利用MySQL中的数据变化来处理时态关联。这通常需要在MySQL中有一个变化数据捕获（CDC）机制的支持，比如使用Debezium来捕获变化并将其发送到Kafka，然后Flink从Kafka中读取这些变化。这种方法允许Flink处理维度数据的历史变化，但它不会将整个MySQL表加载到状态中。
+Caching:
+Flink SQL也支持在状态后端中缓存维度数据，以减少对外部系统的访问次数。这可以通过配置lookup join的缓存策略来实现，例如，可以定义缓存大小和过期时间。这种方法可以减少对MySQL的查询次数，但是会增加Flink状态的大小，并且需要处理缓存数据可能过时的问题。
+```
+
+
+~~~
 

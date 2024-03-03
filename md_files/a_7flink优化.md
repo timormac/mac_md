@@ -127,6 +127,19 @@ Flink 提供了与 HDFS（Hadoop Distributed File System）集成的功能，可
 
 
 
+### 状态管理
+
+```mysql
+memory
+hashmap
+emroccksdb
+fsstate 
+过期状态等，是由数据来了，才能触发清理操作，也可以设置为定时触发。
+不然对一些ttl的状态比如key为 小时｜用户id，并不会清理掉。
+```
+
+
+
 
 
 # 参数优化
