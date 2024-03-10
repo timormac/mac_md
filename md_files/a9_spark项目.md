@@ -4,9 +4,51 @@
 
 ### 1.资源分配有问题
 
+### 2.内存不够溢写，为什么oom
+
+```mysql
+MapReduce（MR）和Apache Spark是两种流行的大数据处理框架，它们都有机制来处理大量数据。在处理大规模数据集时，内存管理是这两个框架都必须面对的一个关键问题。尽管它们都有能力在内存不足时将数据溢写到磁盘，但仍然可能会发生内存溢出（OOM，Out of Memory）错误，原因可能包括：
+
+1. **内存管理策略**：
+   - **MapReduce**：在MapReduce中，shuffle阶段会将中间数据写入本地磁盘。如果一个map任务产生的数据量超过了JVM堆内存的限制，即使有溢写机制，也可能因为没有足够的内存来存储和处理这些数据而导致OOM。
+   - **Spark**：Spark使用内存来存储和处理数据，但是当内存不足时，它会将数据溢写到磁盘。Spark的内存管理是基于一种称为RDD（Resilient Distributed Dataset）的抽象概念，它可以将数据缓存在内存中。如果一个任务的数据集大小超出了可用内存，并且因为GC（垃圾回收）压力或缓存策略不当，导致无法有效地溢写到磁盘，那么也可能发生OOM。
+
+2. **内存配置不当**：
+   - 对于MR和Spark，如果内存配置（如Java堆大小、Spark的executor内存等）过低，那么即使在内存不足时可以溢写到磁盘，但在溢写前的处理过程中仍然可能耗尽内存。
+
+3. **数据倾斜**：
+   - 在MR和Spark中，如果数据分布不均匀，导致某个节点或某个任务处理的数据量远大于其他节点或任务，可能会导致该节点或任务出现OOM。这种现象称为数据倾斜。
+
+4. **大对象处理**：
+   - 如果在处理过程中创建了大量的大对象，并且这些对象的生命周期较长，那么垃圾回收器可能无法及时回收这些对象占用的内存，从而导致OOM。
+
+5. **并发任务数过多**：
+   - 如果同时运行的任务数过多，每个任务分配的内存可能不足以处理数据。
+
+6. **Shuffle行为**：
+   - 在shuffle过程中，数据需要在不同节点间传输，如果shuffle产生的数据量非常大，可能会消耗大量内存。
+
+解决OOM问题通常需要综合考虑资源配置、任务调度、数据分布和代码优化等多方面因素。例如，可以通过调整内存设置、优化数据分区、处理数据倾斜、使用更有效的数据结构和算法，或者增加集群的资源等方式来解决OOM问题。
+```
+
+
+
 # sparksql优化
 
-# 到了p11
+
+
+# p26看完了(看27)
+
+### spark配置文件
+
+```mysql
+#yarn相关
+已知道yarn的默认单节点最大内存分配2g，单个容器是512-1024m，spark参数应该对应yarn
+
+#spark参数
+spark/conf下没有默认的配置文件,每次提交的时候都是临时置顶driver和excutor内存的。
+并且你设置的driver和excutor不能超过yarn的容器大小，不然yarn会拒绝启动容器
+```
 
 
 
@@ -155,14 +197,33 @@ io只传输sql里需要的 列
 ### cbo优化器
 
 ```mysql
-#RBO优化器
+#CBO优化器
 会抉择用最小花费，完成任务，上边的是rbo优化器，优化执行计划。
 两方面:1 根据数据集大小，数据集所在位置，配置任务
 			2 优化操作算子等
 
+#开启CBO
+不开启不起作用
+通过 "spark.sql.cbo.enabled" 来开启，默认是 false。配置开启 CBO 后，CBO 优化器可以
+基于表和列的统计信息，进行一系列的估算，最终选择出最优的查询计划。比如：Build 侧
+选择、优化 Join 类型、优化多表 Join 顺序等
+
+
+spark.sql.cbo.enabled CBO，默认false, 总开关
+要使用该功能，需确保相关表和列的统计信息已经生成。
+
+spark.sql.cbo.joinReorder.enabled 默认flase,使用 CBO 来自动调整连续的 inner join 的顺序。
+要使用该功能，需确保相关表和列的统计信息已经生成。
+举例:a join b join c join d 正常是先a,b完事去join c再d。优化器根据表和列的统计信息可能，c,d先join之之后再跟ab结果join
+
+spark.sql.cbo.joinReorder.dp.threshold 使用 CBO 来自动调整连续 inner join 的表的个数阈值。
+默认是12表以下join才开启，上面的inner join调整
+
+
+
+
 
 #统计表信息
-
 生成表级别统计信息（扫表）：
 ANALYZE TABLE 表名 COMPUTE STATISTICS
 
@@ -182,16 +243,159 @@ DESC FORMATTED 表名 列名
 查看表信息，列信息，如果不执行上面的生成收集计划，是看不到的，执行之后能看到收集到的具体表信息。
 执行完收集任务之后，会持久化到hive在mysql的元数据库，去tb_para里能看到，执行收集后，会发现多了很多数据
 
+#sortmerg join
+默认的就是这个，没有优化，和mr一样，对关联key，进行shuffle，然后进行排序，然后传到redcue，reduce再整体排序
 
 
-
-
-#广播join
+#broadcast join
 当表够小时,会进行broadcast join，小表汇聚到driver，通过driver广播到各分区。
-可以调整braodcastjoin的大小参数
+可以调整braodcastjoin的大小参数。
+
+强行广播：如果有个表500m，可以临时设置广播join大小参数，或者强行广播某个表。
+通过sql写法，暗示就可以，具体看idea代码
+
+SQL Hint方式
+1:
+    |select /*+  BROADCASTJOIN(sc) */
+    |  sc.courseid,
+    |  csc.courseid
+    |from sale_course sc join course_shopping_cart csc
+    |on sc.courseid=csc.courseid
+2:
+    |select /*+  BROADCAST(sc) */
+    |  sc.courseid,
+    |  csc.courseid
+    |from sale_course sc join course_shopping_cart csc
+    |on sc.courseid=csc.courseid
+3.
+    |select /*+  MAPJOIN(sc) */
+    |  sc.courseid,
+    |  csc.courseid
+    |from sale_course sc join course_shopping_cart csc
+    |on sc.courseid=csc.courseid
+4. 通过代码调用    
+val sc: DataFrame = sparkSession.sql("select * from sale_course").toDF()
+val csc: DataFrame = sparkSession.sql("select * from course_shopping_cart").toDF()
+println("=======================DF API=============================")
+import org.apache.spark.sql.functions._
+broadcast(sc)
+  .join(csc,Seq("courseid"))
+  .select("courseid")
+  .explain()
+
+
+#smb join(分桶表join)
+如果原来表没有设置分桶，那么做一个临时的分桶表。通过2个分桶表join，2个分桶表的join必须，桶数相同，或者成整数倍。
+
+注意如果是3表join，2个分桶，一个不分桶，那么先分桶表之间先join，如果先join非分桶的，那么得到的结果就是非分桶表了，
+后序无法smb join
+
 ```
 
 
+
+### 数据倾斜
+
+```mysql
+#表现
+看sparkUI图,然后发现其他任务比较短，个别任务长度长。太久了坑出现oom
+
+#找到大key
+通过抽样执行，而不是通过sql整个表查询。
+抽样代码
+val df: DataFrame = sparkSession.sql("select " + keyColumn + " from " + tableName)
+val top10Key = df
+  .select(keyColumn).sample(false, 0.1).rdd // 对key不放回采样
+  .map(k => (k, 1)).reduceByKey(_ + _) // 统计不同key出现的次数
+  .map(k => (k._2, k._1)).sortByKey(false) // 统计的key进行排序
+  .take(10)
+top10Key
+
+#groupby数据倾斜
+默认就是开启预聚合，hashAggregate,这个就是预聚合，执行计划中都是成对出现，先map端预聚合，再reduce聚合一次。
+基本来说groupby大部分的情况。
+对于将id打散前缀加1-10，先聚合，再聚合，这种方法运用场景不多。
+
+#join数据倾斜
+1 广播join
+2 热点数据单独处理 join
+比如订单大表，关联poi大表。无法广播，把热点poid找出，然后分别join就行广播了，然后union
+3 大key打散｜前缀1-10，然后维度表扩大10倍，join。先对key采样，只对热点key进行打散，然后union 非热点key的正常join
+这个场景订单大表1000个g，维度表1g，不适合广播维度表，把维度表变为10倍。再join,还是shuffle，不太行
+这种不好，最完美就是把维度表广播
+
+```
+
+
+
+### job代码优化??
+
+```mysql
+#算子优化
+当聚合时，用reducebykey或aggregatebykey，这个会预聚合，直接用groupbykey不会预聚合
+
+#读取小文件优化  详情在p23 5:03
+读取的数据源有很多小文件，会造成查询性能的损耗，大量的数据分片信息以及对应
+产生的 Task 元信息也会给 Spark Driver 的内存造成压力，带来单点问题。
+设置参数：
+spark.sql.files.maxPartitionBytes=128MB 默认 128m
+spark.files.openCostInBytes=4194304 默认 4m   文件开销，何3个文件,12m是文件开销，剩下的才是给文件的 具体作用看p23 5:03
+
+#????？
+如果是这个逻辑，为什么说spark默认的task数是200个呢？？？不应该根据并行度和切片数来执行任务吗？？？
+还是说200是shuffle的task个数呢？？
+
+#map端buffer优化
+能减少shuffle时，write的时间。之前说的如果数据不大，不落盘直接走内存，不存在，域值就5m肯定要落盘的
+具体p24
+
+#合理设置reduce数
+生成文件等于shuffle并行度，默认时200个文件，
+1）可以在插入表数据前进行缩小分区操作来解决小文件过多问题，如 coalesce、repartition 算子。
+就是先正常shuffle，不会减少shuffle的速度，然后多一个coalesce算子，减少分区数。
+2）调整 shuffle 并行度，有 Shuffle 的情况下，上面的 Task 数量 就变成了 spark.sql.shuffle.partitions（默认值
+200
+
+
+#小文件问题
+动态分区，
+1）没有 Shuffle 的情况下。最差的情况下，每个 Task 中都有表各个分区的记录，那文
+件数最终文件数将达到 Task 数量 * 表分区数。这种情况下是极易产生小文件的。
+INSERT overwrite table A partition ( aa )
+SELECT * FROM B;
+2）有 Shuffle 的情况下，上面的 Task 数量 就变成了 spark.sql.shuffle.partitions（默认值
+200）。那么最差情况就会有 spark.sql.shuffle.partitions * 表分区数。
+当 spark.sql.shuffle.partitions 设 置 过 大 时 ， 小 文 件 问 题 就 产 生 了 ； 当
+spark.sql.shuffle.partitions 设置过小时，任务的并行度就下降了，性能随之受到影响。
+最理想的情况是根据分区字段进行 shuffle，在上面的 sql 中加上 distribute by aa。把同
+一分区的记录都哈希到同一个分区中去，由一个 Spark 的 Task 进行写入，这样的话只会产
+生 N 个文件, 但是这种情况下也容易出现数据倾斜的问题。
+```
+
+### hint暗示join
+
+```mysql
+# broadcasthast join 广播
+sparkSession.sql("select /*+ BROADCAST(school) */ * from test_student
+student left join test_school school on student.id=school.id").show()
+
+# sort merge join（适合大数据集，需要排序，可以不需要将整个数据集加载到内存，通过磁盘排序和合并，能处理大数据集）
+sparkSession.sql("select /*+ SHUFFLE_MERGE(school) */ * from
+test_student student left join test_school school on
+student.id=school.id").show()
+sparkSession.sql("select /*+ MERGEJOIN(school) */ * from test_student
+student left join test_school school on student.id=school.id").show()
+sparkSession.sql("select /*+ MERGE(school) */ * from test_student
+student left join test_school school on student.id=school.id").show()
+
+#shuffle_hash join( 没有排序炒作，key相同的发送到相同节点上，需要都加载到内存   )
+sparkSession.sql("select /*+ SHUFFLE_HASH(school) */ * from test_student
+student left join test_school school on student.id=school.id").show()
+
+# shuffle_replicate_nl join
+使用条件非常苛刻，驱动表（school 表）必须小,且很容易被 spark 执行成 sort merge
+join。
+```
 
 
 

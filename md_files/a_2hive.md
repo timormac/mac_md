@@ -1009,6 +1009,18 @@ from(
 
 # hive客户端
 
+### hive配置文件
+
+```mysql
+#hive仓库的目录,创建的database在这里,自带的default库建表也在这里,所以默认的default库别用，会很乱
+    <property>
+        <name>hive.metastore.warehouse.dir</name>
+        <value>/hive</value>
+    </property>
+```
+
+
+
 
 ### hiveserver2
 
@@ -1187,7 +1199,12 @@ hive表表中load数据是直接把块记录更改，不会更改数据。如果
 #### 库表操作
 
 ```mysql
-创建数据库  默认存储路径是   /user/hive/warehouse/.db，可以指定位置
+#创建数据库  
+创建一个新库，默认存储路径是   /hive/.db 可以指定位置
+使用defult库，默认建表路径是/hive，因此会比较混乱
+
+#查看建表语句
+show create table tb1;
 
 #库相关
 show databases； 查看所有库
