@@ -761,6 +761,28 @@ exactly-once能保证事件只被消费一次,at-least-once可能出现重复消
 
 # TableAPI
 
+### 理解
+
+```mysql
+sql 会转化为tableAPI ,而table API的底层join等，也不是用通过dataStreamAPI 用connect流实现的，而是更底层的控制
+```
+
+
+
+### savepoint
+
+flink客户端，关闭任务时，执行save point,要事先设置save point制定路径，不然会报错。
+
+如果临时执行reset save point ,后面要重置为空，不然后面所有的作业，都以这个save point路径保存
+
+### catalog
+
+catalog不持久化，下次进去就删除，但是表不删除。建了同名的cataloge，tables就出现了
+
+flink能对接hive表,不过flink不是个流吗？难道能监控hive表中数据变化吗？
+
+
+
 ### 待解决问题
 
 ```mysql

@@ -1,0 +1,72 @@
+kafka-topics.sh   --bootstrap-server  timor@localhost:9092   --create --topic  
+
+ kafka-topics.sh   --list  --bootstrap-server localhost:9092 
+ kafka-topics.sh  --bootstrap-server  localhost:9092  --delete --topic  flink_sink
+
+stream_in.rt_crhkh_crh_wskh_userqueryextinfo
+stream_crhkh_crh_wskh_mid
+stream_mot_stream_account_break_ths
+stream_mot_stream_account_break_ths_cc
+stream_mot_stream_account_break_ths_cc_mid
+stream_mot_stream_account_break_ths_mot_mid
+
+
+
+
+
+数据样式
+rt_crhkh_crh_wskh_userqueryextinfo 
+
+{
+    "message": {
+        "data": {
+            "USER_ID": "3413602",
+            "MOBILE_TEL": "17832300656",
+            "BRANCH_NO": " ",
+            "BUSINESS_FLAG_LAST": "22107",
+            "REQUEST_STATUS": "0",
+            "SUBMIT_DATETIME": null,
+            "CHANNEL_CODE": "10632",
+            "LAST_UPDATE_DATETIME": "2024-03-15 10:05:51",
+            "CLIENT_NAME": "刘嘉浩",
+            "ID_NO": "130421200508230659",
+            "BIRTHDAY": "20050823",
+            "REQUEST_NO": "2593832"
+        }
+    }
+}
+
+-----------------------------------------------------
+
+
+
+{
+"USER_ID": "3413602",
+"MOBILE_TEL": "17832300656",
+"BRANCH_NO": " ",
+"BUSINESS_FLAG_LAST": "22107",
+"REQUEST_STATUS": "0",
+"SUBMIT_DATETIME": null,
+"CHANNEL_CODE": "10632",
+"LAST_UPDATE_DATETIME": "2024-03-15 10:05:51",
+"CLIENT_NAME": "刘嘉浩",
+"ID_NO": "130421200508230659",
+"BIRTHDAY": "20050823",
+"REQUEST_NO": "2593832"
+}
+
+-----------------------------------------------------
+
+表结构
+USER_ID varchar as user_id
+MOBILE_TEL varchar as mobile_tel
+BRANCH_NO varchar as branch_no
+BUSINESS_FLAG_LAST varchar as business_flag_last
+REQUEST_STATUS varchar as request_status
+SUBMIT_DATETIME varchar as submit_datetime
+CHANNEL_CODE varchar as channel_code
+LAST_UPDATE_DATETIME varchar as last_update_detetime
+CLIENT_NAME varchar as client_name
+ID_NO varchar as id_no
+BIRTHDAY varchar as birthday
+REQUEST_NO varchar as request_no

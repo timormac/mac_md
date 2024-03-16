@@ -1,0 +1,132 @@
+stream_in.rt_crhkh_crh_wskh_userqueryextinfo --kafka
+rt_crhkh_crh_wskh_userqueryextinfo 
+
+表结构
+message.data.USER_ID varchar as user_id
+message.data.MOBILE_TEL varchar as mobile_tel
+message.data.BRANCH_NO varchar as branch_no
+message.data.BUSINESS_FLAG_LAST varchar as business_flag_last
+message.data.REQUEST_STATUS varchar as request_status
+message.data.SUBMIT_DATETIME varchar as submit_datetime
+message.data.CHANNEL_CODE varchar as channel_code
+message.data.LAST_UPDATE_DATETIME varchar as last_update_detetime
+message.data.CLIENT_NAME varchar as client_name
+message.data.ID_NO varchar as id_no
+message.data.BIRTHDAY varchar as birthday
+message.data.REQUEST_NO varchar as request_no
+
+-------------------------------------------------------------------------------------------------------------------
+
+stream_crhkh_crh_wskh_mid  --kafka
+sink_stream_crhkh_crh_wskh_mid
+source_stream_crhkh_crh_wskh_mid
+
+表结构
+mobile_tel varchar
+branch_no varchar
+business_flag_last varchar
+channel_code varchar
+request_datetime varchar
+client_name varchar
+user_id varchar
+id_no varchar
+birthday varchar
+request_no varchar
+
+-------------------------------------------------------------------------------------------------------------------
+
+stream_mot_stream_account_break_ths  --kafka
+sink_stream_mot_e_event_flow_smot
+source_mot_stream_account_break_ths  
+
+表结构
+event_id varchar
+event_name varchar
+client_name varchar
+channel_name varchar
+branch_name varchar
+last_mobilenum varchar
+request_no varchar
+business_name varchar
+step_code varchar
+step_name varchar
+channel_type varchar
+mobile varchar
+branch_code varchar
+occur_date varchar
+occur_time varchar
+birthday varchar
+
+-------------------------------------------------------------------------------------------------------------------
+
+stream_mot_stream_account_break_ths_cc  --kafka
+sink_stream_mot_e_event_flow_smot_cc
+source_mot_stream_account_break_ths_cc
+
+表结构
+event_id varchar
+event_name varchar
+client_name varchar
+channel_name varchar
+branch_name varchar
+last_mobilenum varchar
+request_no varchar
+business_name varchar
+step_code varchar
+step_name varchar
+channel_type varchar
+mobile varchar
+branch_code varchar
+occur_date varchar
+occur_time varchar
+birthday varchar
+
+-------------------------------------------------------------------------------------------------------------------
+
+stream_mot_stream_account_break_ths_cc_mid  --kafka
+sink_stream_mot_e_event_flow_smot_cc_mid 
+source_stream_mot_e_event_flow_smot_cc_mid
+
+表结构
+event_id varchar
+event_name varchar
+client_name varchar
+channel_name varchar
+branch_name varchar
+last_mobilenum varchar
+request_no varchar
+business_name varchar
+step_code varchar
+step_name varchar
+channel_type varchar
+mobile varchar
+branch_code varchar
+occur_date varchar
+occur_time varchar
+birthday varchar
+-------------------------------------------------------------------------------------------------------------------
+
+stream_mot_stream_account_break_ths_mot_mid --kafka
+sink_stream_mot_e_event_flow_smot_mot_mid
+source_stream_mot_e_event_flow_smot_mot_mid
+
+表结构
+
+event_id varchar
+event_name varchar
+client_name varchar
+channel_name varchar
+branch_name varchar
+last_mobilenum varchar
+request_no varchar
+business_name varchar
+step_code varchar
+step_name varchar
+channel_type varchar
+mobile varchar
+branch_code varchar
+occur_date varchar
+occur_time varchar
+birthday varchar
+
+

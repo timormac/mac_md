@@ -158,6 +158,8 @@ soma体统带的，设置方式：
 
 #### 2.mac配置环境变量
 
+目前环境变量都在 ~/.bash_profile
+
 安装了homebrew ，没配置环境变量，无法直接执行brew 指令,也是在 ~/.bash_profile 加一句
 
 export PATH="/opt/homebrew/bin:$PATH" ，这句代码执行的是，把/opt/homebrew/bin  拼接在$PATH这个变量前面，
@@ -242,6 +244,8 @@ Lpc19950419
 
 用pages打开word不乱码, 然后用pages导出新的word，用word打开新的word就不会乱码了
 
+
+
 # mac快捷键
 
 #### 显示隐藏文件
@@ -258,12 +262,30 @@ Lpc19950419
 
 
 
+# mac本地软件(mysql等)
+
+```mysql
+#位置
+安装包都在桌面,位置也都在桌面
+
+#mysql相关
+root
+lpc19950419
+1 安装位置:ps -ef|grep mysql能找到  :在/usr/local/mysql/bin/
+
+2 先插看是否开启了binlog   mysql>> show variables like 'log_bin';
+
+2 开启binlog方法:
+		在mysql/bin路径下执行  ：mysql --help --verbose|grep my.cnf
+		返回如下:order of preference, my.cnf, $MYSQL_TCP_PORT,
+		/etc/my.cnf /etc/mysql/my.cnf /usr/local/mysql/etc/my.cnf ~/.my.cnf
+	
+
+3 etc下新建my.cnf
 
 
-# 外设键盘指令
+```
 
-外设连接：
 
-键盘开蓝牙：fn + q 蓝牙1。fn +w 蓝牙2 fn +e 蓝牙3. 多设备切换也是。 
 
-B是蓝牙，G是接收器。
+

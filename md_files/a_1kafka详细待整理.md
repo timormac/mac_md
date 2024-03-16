@@ -167,10 +167,6 @@ kafka-console-producer.sh   --broker-list     lpc@project1:9092   --topic   maxw
 
 
 
-下面的是执行不了的
-
-kafka-console-producer.sh   ---bootstrap-server     lpc@project1:9092   --topic   maxwell
-
 
 
 2 消费topic数据

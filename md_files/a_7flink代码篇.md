@@ -179,6 +179,25 @@ maxwell流，一个流多个表
 2个keyby流connect后，再执行keyby，也是独自各自进行keyby
 ```
 
+## 代码总结
+
+#### join方式
+
+```mysql
+#interval join 间隔关联
+
+#window join 窗口关联
+通过ds.join(ds2)获取joined
+joinDS.where().equal().window().apply()
+join流必须调用window方法
+
+#connect流 全关联
+
+
+```
+
+
+
 
 
 ## 代码demo

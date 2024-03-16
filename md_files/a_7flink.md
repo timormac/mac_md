@@ -548,27 +548,3 @@ aggreagte算子只有窗口流才能用,keyby的流没有这个方法
 
 
 
-# Table API
-
-### savepoint
-
-flink客户端，关闭任务时，执行save point,要事先设置save point制定路径，不然会报错。
-
-如果临时执行reset save point ,后面要重置为空，不然后面所有的作业，都以这个save point路径保存
-
-### catalog
-
-catalog不持久化，下次进去就删除，但是表不删除。建了同名的cataloge，tables就出现了
-
-flink能对接hive表,不过flink不是个流吗？难道能监控hive表中数据变化吗？
-
-
-
-
-
-
-
-
-
-
-
