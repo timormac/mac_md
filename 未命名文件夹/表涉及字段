@@ -1,0 +1,425 @@
+0
+"REALTIME"."RT_CRHKH_CRH_SBC_ACCEPTANCE":op_branch_no,submit_date_time,fund_account,status
+"STAGING"."CRHKH_CRH_HIS_HIS_ACCEPTANCE":op_branch_no,submit_date_time,fund_account,status
+"STAGING"."CRHKH_CRH_USER_ALLBRANCH":branch_no,branch_name
+
+
+1
+realtime."RT_CRHKH_CRH_WSKH_USERQUERYEXTINFO":MOBILE_TEL, recommender, request_datetime,CHANNEL_CODE
+realtime.RT_CRHKH_CRH_WSKH_CLOUDSHARERECORD:request_no, recommender, SOURCE_KIND, CHANNEL_CODE
+realtime."RT_ISALES_GD_ISALES_SHARE_USER_RELATION":C_USER_ID, union_id
+
+2
+REALTIME."RT_JYGZC_USER_USER_THIRD_PARTY_ACCOUNT": USER_ID, UNION_ID
+REALTIME."RT_JYGZC_USER_USER_CLIENT_RELATION": USER_ID, FUND_ACCOUNT 
+realtime."RT_ISERVICE_ISE_CST_CUSTOMER": UNION_ID, IS_DELETED
+realtime."RT_ISALES_GD_ISALES_SHARE_CUSTOMER_USER": C_USERID, unionid
+realtime."RT_CRHKH_CRH_WSKH_CLOUDSHARERECORD": RECOMMENDER, CHANNEL_CODE, SOURCE_KIND
+realtime."RT_CRHKH_CRH_WSKH_USERQUERYEXTINFO": REQUEST_NO, CHANNEL_CODE
+
+3
+realtime."RT_ISALES_GD_ISALES_SHARE_CUSTOMER_USER": unionid, C_USERID
+realtime."RT_CRHKH_CRH_WSKH_CLOUDSHARERECORD": RECOMMENDER, CHANNEL_CODE, SOURCE_KIND, REQUEST_NO
+realtime."RT_CRHKH_CRH_WSKH_USERQUERYEXTINFO": FUND_ACCOUNT, REQUEST_NO, request_datetime, CHANNEL_CODE
+
+4
+realtime."RT_CRHKH_CRH_WSKH_USERQUERYEXTINFO": MOBILE_TEL, recommender, request_datetime, CHANNEL_CODE, request_no
+realtime."RT_CRHKH_CRH_WSKH_CLOUDSHARERECORD": request_no, recommender, SOURCE_KIND, CHANNEL_CODE
+realtime."RT_ISALES_GD_ISALES_SHARE_USER_RELATION": C_USER_ID, union_id
+
+5
+dw."DWD_ACC_FUNDACC_INFO": mobile
+realtime."RT_CRHKH_CRH_WSKH_USERQUERYEXTINFO": MOBILE_TEL
+
+6
+REALTIME.RT_CRHKH_CRH_WSKH_USERQUERYEXTINFO: client_name, MOBILE_TEL, cunter_datetime, bank_account, user_id, fund_account, REQUEST_STATUS, BROKER_CODE, last_update_datetime
+STAGING.CFJL_HIS_TKHWSKHBD: gjzt, yxry, sm, khh, id
+STAGING.CFJL_CRMII_KHJDCXRYXX: rybh, dyyh
+
+7
+realtime."RT_CRHKH_CRH_USER_BUSINFLOWRECORD": business_flag, curr_datetime, business_remark, request_no
+realtime."RT_CRHKH_CRH_WSKH_USERQUERYEXTINFO": request_no, USER_ID
+staging."CFJL_CRMII_TSHGJ": zsmc, czjy, khzt, khjd
+realtime."RT_CRHKH_CRH_HIS_HIS_BUSINFLOWRECORD": business_flag, curr_datetime, business_remark, request_no
+
+8
+"REALTIME"."RT_CRHKH_CRH_USER_BUSINFLOWAUDITRECORD": curr_datetime, REQUEST_NO, BUSINESS_FLAG
+"REALTIME"."RT_CRHKH_CRH_WSKH_USERQUERYEXTINFO": REQUEST_NO, user_id
+"REALTIME"."RT_CRHKH_CRH_HIS_HIS_BUSINFLOWAUDITRECORD": curr_datetime, REQUEST_NO, BUSINESS_FLAG
+
+9
+"REALTIME"."RT_CRHKH_CRH_WSKH_USERQUERYEXTINFO": mobile_tel, request_status, LAST_UPDATE_DATETIME, BROKER_CODE
+"STAGING"."CFJL_CRMII_TRYXX": rybh, dyyh
+
+10
+"REALTIME"."RT_CRHKH_CRH_WSKH_USERQUERYEXTINFO": client_name, mobile_tel, fund_account, branch_no, business_flag_last, request_status, user_id, LAST_UPDATE_DATETIME, REQUEST_NO, BROKER_CODE
+"REALTIME"."RT_CRHKH_CRH_USER_SYSBUSINESS": business_flag, business_name
+"REALTIME"."RT_CRHKH_CRH_USER_BASEDICTIONARY": dict_entry, dict_prompt, subentry
+"REALTIME"."RT_CRHKH_CRH_WSKH_PHONEREVISIT": status, REQUEST_NO
+"STAGING"."CFJL_CRMII_KHJDCXRYXX": rybh, dyyh
+
+11
+RT_CRHKH_CRH_USER_BUSINFLOWRECORD: curr_datetime, business_flag, user_id, request_no
+RT_CRHKH_CRH_HIS_HIS_BUSINFLOWRECORD: curr_datetime, business_flag, user_id, request_no
+
+12
+"REALTIME"."RT_CRHKH_CRH_WSKH_USERQUERYEXTINFO": mobile_tel, request_status, LAST_UPDATE_DATETIME, BROKER_CODE
+"STAGING"."CFJL_CRMII_KHJDCXRYXX": rybh, dyyh
+
+13
+REALTIME.RT_CRHKH_CRH_WSKH_USERQUERYEXTINFO:client_name,MOBILE_TEL,cunter_datetime,bank_account,user_id,fund_account,REQUEST_STATUS,BROKER_CODE,last_update_datetime
+STAGING.CFJL_HIS_TKHWSKHBD:gjzt,yxry,sm,khh,id
+REALTIME.RT_JZJY_BANK_ACC:BANK_ACC_NO,CUST_NO
+STAGING.CFJL_CRMII_TRYXX:rybh,dyyh,zhzt,id
+
+14
+REALTIME.RT_CRHKH_CRH_WSKH_USERQUERYEXTINFO: mobile_tel, request_status, BRANCH_NO, LAST_UPDATE_DATETIME
+
+15
+"REALTIME"."RT_CRHKH_CRH_WSKH_USERQUERYEXTINFO": client_name, MOBILE_TEL, cunter_datetime, bank_account, user_id, fund_account, REQUEST_STATUS, BRANCH_NO, last_update_datetime
+"STAGING"."CFJL_HIS_TKHWSKHBD": gjzt, yxry, sm, id, khh
+"REALTIME"."RT_JZJY_BANK_ACC": BANK_ACC_NO, CUST_NO
+
+16
+RT_CRHKH_CRH_WSKH_USERQUERYEXTINFO: client_name, mobile_tel, fund_account, branch_no, business_flag_last, request_status, user_id, LAST_UPDATE_DATETIME, REQUEST_NO
+RT_CRHKH_CRH_USER_SYSBUSINESS: business_flag, business_name
+RT_CRHKH_CRH_USER_BASEDICTIONARY: dict_entry, dict_prompt, subentry
+RT_CRHKH_CRH_WSKH_PHONEREVISIT: status, REQUEST_NO
+
+17
+ealtime."RT_CRHKH_CRH_WSKH_PHONEREVISITLOG": status, create_datetime, request_no, remark
+realtime."RT_CRHKH_CRH_WSKH_USERQUERYEXTINFO": USER_ID, request_no
+staging."CFJL_CRMII_TSHGJ": zsmc, czjy, khzt, khjd
+realtime."RT_CRHKH_CRH_WSKH_WSKHEXTENDRECORD": business_flag, curr_datetime, request_no
+
+18
+
+"REALTIME"."RT_CRHKH_CRH_WSKH_USERQUERYEXTINFO": client_name, mobile_tel, fund_account, branch_no, request_status, user_id, business_flag_last, LAST_UPDATE_DATETIME, REQUEST_NO
+"REALTIME"."RT_CRHKH_CRH_USER_SYSBUSINESS": business_name, business_flag
+"REALTIME"."RT_CRHKH_CRH_USER_BASEDICTIONARY": dict_prompt, dict_entry, subentry
+"REALTIME"."RT_CRHKH_CRH_WSKH_PHONEREVISIT": status, REQUEST_NO
+"STAGING"."CFJL_CRMII_KHJDCXRYXX": rybh, dyyh
+
+19
+REALTIME.RT_CRHKH_CRH_WSKH_USERQUERYEXTINFO: client_name, MOBILE_TEL, cunter_datetime, bank_account, user_id, fund_account, REQUEST_STATUS, BRANCH_NO, last_update_datetime
+STAGING.CFJL_HIS_TKHWSKHBD: gjzt, yxry, sm, khh, id
+
+20
+REALTIME.RT_CRHKH_CRH_WSKH_USERQUERYEXTINFO: client_name, MOBILE_TEL, cunter_datetime, bank_account, user_id, fund_account, REQUEST_STATUS, BROKER_CODE, last_update_datetime
+STAGING.CFJL_HIS_TKHWSKHBD: gjzt, yxry, sm, khh, id
+STAGING.CFJL_CRMII_TRYXX: rybh, dyyh, zhzt, id
+
+21
+REALTIME.RT_CRHKH_CRH_WSKH_USERQUERYEXTINFO: user_id, client_name, mobile_tel, id_kind, id_no, channel_code, recommender, request_status, fund_account, request_no, BROKER_CODE
+REALTIME.RT_CRHKH_CRH_USER_BASEDICTIONARY: dict_entry, subentry, dict_prompt
+REALTIME.RT_CRHKH_CRH_WSKH_CHANNELDEFINE: channel_code, channel_name
+REALTIME.RT_CRHKH_CRH_USER_BUSINFLOWAUDITRECORD: request_no, curr_datetime, audit_remark, audit_status
+STAGING.CFJL_CRMII_TRYXX: RYBH, ryxm
+
+22
+REALTIME.RT_CRHKH_CRH_WSKH_USERQUERYEXTINFO: client_name, MOBILE_TEL, cunter_datetime, REQUEST_STATUS, client_name, MOBILE_TEL, last_update_datetime, BROKER_CODE, user_id, fund_account
+STAGING.CFJL_CRMII_KHJDCXRYXX: rybh, dyyh
+
+23
+REALTIME.RT_CRHKH_CRH_WSKH_USERQUERYEXTINFO: client_name, MOBILE_TEL, cunter_datetime, REQUEST_STATUS, BRANCH_NO, user_id, fund_account, last_update_datetime
+
+24
+REALTIME.RT_CRHKH_CRH_WSKH_USERQUERYEXTINFO: client_name, MOBILE_TEL, cunter_datetime, REQUEST_STATUS, BROKER_CODE, user_id, fund_account, last_update_datetime
+STAGING.CFJL_CRMII_TRYXX: rybh, dyyh, zhzt, id
+
+25
+REALTIME.RT_CRHKH_CRH_USER_BUSINFLOWAUDITRECORD: business_flag, curr_datetime, audit_remark, auditor_name, request_no
+REALTIME.RT_CRHKH_CRH_WSKH_USERQUERYEXTINFO: request_no, USER_ID
+STAGING.CFJL_CRMII_TSHGJ: zsmc, czjy, khzt, khjd
+
+26
+REALTIME.RT_CRHKH_CRH_WSKH_USERQUERYEXTINFO: CLIENT_NAME, MOBILE_TEL, user_id, REQUEST_STATUS, active_datetime, last_update_datetime, BROKER_CODE
+STAGING.CFJL_CRMII_TRYXX: rybh, dyyh, zhzt, id
+
+27
+REALTIME.RT_CRHKH_CRH_WSKH_USERQUERYEXTINFO: client_name, mobile_tel, fund_account, branch_no, request_status, user_id, business_flag_last, LAST_UPDATE_DATETIME, BROKER_CODE
+REALTIME.RT_CRHKH_CRH_USER_SYSBUSINESS: business_flag, business_name
+REALTIME.RT_CRHKH_CRH_USER_BASEDICTIONARY: dict_entry, dict_prompt, subentry
+REALTIME.RT_CRHKH_CRH_WSKH_PHONEREVISIT: REQUEST_NO, status
+STAGING.CFJL_CRMII_TRYXX: rybh, dyyh, zhzt, id
+
+28
+RT_CRHKH_CRH_WSKH_USERQUERYEXTINFO: client_name, mobile_tel, fund_account, branch_no, request_status, user_id, business_flag_last, LAST_UPDATE_DATETIME, REQUEST_NO
+RT_CRHKH_CRH_USER_SYSBUSINESS: business_name, business_flag
+RT_CRHKH_CRH_USER_BASEDICTIONARY: dict_prompt, dict_entry, subentry
+RT_CRHKH_CRH_WSKH_PHONEREVISIT: status, REQUEST_NO
+
+29
+"REALTIME"."RT_CRHKH_CRH_WSKH_USERQUERYEXTINFO": client_name, MOBILE_TEL, cunter_datetime, bank_account, user_id, fund_account, REQUEST_STATUS, BROKER_CODE
+"STAGING"."CFJL_HIS_TKHWSKHBD": gjzt, yxry, sm, khh, id
+"STAGING"."CFJL_CRMII_KHJDCXRYXX": rybh, dyyh
+"REALTIME"."RT_JZJY_BANK_ACC": BANK_ACC_NO, CUST_NO, last_update_datetime
+
+30
+"REALTIME"."RT_CRHKH_CRH_WSKH_USERQUERYEXTINFO": CLIENT_NAME, MOBILE_TEL, user_id, active_datetime, REQUEST_STATUS, last_update_datetime, BROKER_CODE
+"STAGING"."CFJL_CRMII_KHJDCXRYXX": rybh, dyyh
+
+31
+RT_CRHKH_CRH_WSKH_USERQUERYEXTINFO: request_status, last_update_datetime, USER_ID
+RT_CRHKH_CRH_USER_BASEDICTIONARY: dict_prompt, dict_entry, subentry
+
+32
+RT_CRHKH_CRH_WSKH_USERQUERYEXTINFO:CLIENT_NAME,MOBILE_TEL,user_id,active_datetime,REQUEST_STATUS,last_update_datetime,BRANCH_NO
+
+33
+RT_CRHKH_CRH_WSKH_USERQUERYEXTINFO:request_no,user_id,REQUEST_STATUS,audit_batch_no,LAST_UPDATE_DATETIME
+RT_CRHKH_CRH_WSKH_PHONEREVISIT:request_no,status,remark,operator_name,UPDATE_DATETIME
+RT_CRHKH_CRH_WSKH_REVISITAUDIT:user_id,TASK_STATUS
+CFJL_CRMII_TKHZD:khzt,sjzt,khjd,jyzszt,czjy
+RT_CRHKH_CRH_USER_BUSINFLOWAUDITRECORD:request_no,audit_batch_no,curr_datetime,audit_remark,audit_status
+
+
+34
+RT_CRHKH_CRH_WSKH_USERQUERYEXTINFO: client_name, mobile_tel, fund_account, branch_no, business_flag_last, request_status, user_id, LAST_UPDATE_DATETIME, REQUEST_NO
+RT_CRHKH_CRH_USER_SYSBUSINESS: business_flag, business_name
+RT_CRHKH_CRH_USER_BASEDICTIONARY: dict_entry, subentry, dict_prompt
+RT_CRHKH_CRH_WSKH_PHONEREVISIT: status, REQUEST_NO
+CFJL_CRMII_TRYXX: rybh, dyyh, zhzt, id
+
+35
+realtime."RT_CRHKH_CRH_WSKH_USERQUERYEXTINFO": user_id, mobile_tel
+
+36
+realtime."RT_CRHKH_CRH_SBC_ACCEPTANCE": request_no, fund_account, CLIENT_NAME, BRANCH_NO, status, sub_serial_no, create_date, create_time, businflow_no, sub_businflow_no, sub_businflow_detail
+staging."CRHKH_CRH_HIS_HIS_ACCEPTANCE": request_no, fund_account, CLIENT_NAME, BRANCH_NO, status, sub_serial_no, CREATE_DATE, create_time, businflow_no, sub_businflow_no, sub_businflow_detail
+realtime."RT_CRHKH_CRH_SUIT_PRODSUITINFO": ta_code, prod_name, product_flag
+realtime."RT_CRHKH_CRH_SUIT_SUBPRODSUITINFO": ta_code, sub_prod_code, sub_prod_name, begin_datetime, end_datetime, is_suit
+realtime."RT_CRHKH_CRH_SBC_AUDITRECORD": request_no, operator_status, create_date, create_time, op_remark, anode_id
+staging."CRHKH_CRH_HIS_HIS_AUDITRECORD": request_no, operator_status, create_date, create_time, op_remark, anode_id
+realtime."RT_OTC_OTCTS_OTC_TRD_ORDERS": app_sno, CUACCT_CODE, CUST_NAME, ORG_CODE, inst_code, inst_sname, app_timestamp, visit_stat
+staging."OTC_OTCTSHIS_OTC_HIS_TRD_ORDERS": app_sno, CUACCT_CODE, CUST_NAME, ORG_CODE, inst_code, inst_sname, APP_TIMESTAMP, visit_stat
+realtime."RT_EGT_CIF_TYWQQ": id, khh, khmc, yyb, clzt, req_data, sqrq, sqsj, ywdm
+realtime."RT_EGT_CIF_TYWQQ_CZLS": ywqqid, action, BZSM
+staging."OTC_OTCTS_OTC_INST_BASE_INFO": INST_CODE, inst_sname, inst_type, inst_cls
+staging."DWD_ACC_FUNDACC": fund_acc_no, CLIENT_ID, fund_acc_attr, MAIN_FLAG
+staging."DDSDX_SDX_TKHYWSX": khh, tzzfl
+
+37
+REALTIME.RT_CRHKH_CRH_WSKH_USERQUERYEXTINFO: USER_ID, FUND_ACCOUNT, CLIENT_NAME, ID_KIND, ID_NO, MOBILE_TEL, BRANCH_NO, CHANNEL_CODE, request_status
+REALTIME.RT_CRHKH_CRH_USER_BASEDICTIONARY: SUBENTRY, DICT_PROMPT, DICT_ENTRY
+REALTIME.RT_CRHKH_CRH_USER_BASEDICTIONARY: SUBENTRY, DICT_PROMPT, DICT_ENTRY
+dw.DWD_DIM_ORG_BRANCH: CHANGE_BRANCH_NAME, BRANCH_CODE
+REALTIME.RT_CRHKH_CRH_WSKH_CHANNELDEFINE: CHANNEL_NAME, CHANNEL_CODE
+
+38
+RT_CRHKH_CRH_USER_BUSINFLOWRECORD: curr_datetime, business_flag, user_id, request_no
+RT_CRHKH_CRH_HIS_HIS_BUSINFLOWRECORD: curr_datetime, business_flag, user_id, request_no
+
+39
+REALTIME.RT_CRHKH_CRH_USER_BUSINFLOWAUDITRECORD: business_flag, curr_datetime, audit_remark, auditor_name, request_no
+REALTIME.RT_CRHKH_CRH_WSKH_USERQUERYEXTINFO: request_no, USER_ID
+STAGING.CFJL_CRMII_TSHGJ: zsmc, czjy, khzt, khjd
+REALTIME.RT_CRHKH_CRH_HIS_HIS_BUSINFLOWAUDITRECORD: business_flag, curr_datetime, audit_remark, auditor_name, request_no
+
+40
+realtime."RT_CRHKH_CRH_WSKH_PHONEREVISITLOG": status, create_datetime, request_no, remark
+realtime."RT_CRHKH_CRH_WSKH_USERQUERYEXTINFO": request_no, USER_ID
+staging."CFJL_CRMII_TSHGJ": zsmc, czjy, khzt, khjd
+realtime."RT_CRHKH_CRH_WSKH_WSKHEXTENDRECORD": business_flag, curr_datetime, request_no
+
+41
+realtime."RT_CRHKH_CRH_USER_BUSINFLOWRECORD": business_flag, curr_datetime, business_remark, request_no
+realtime."RT_CRHKH_CRH_WSKH_USERQUERYEXTINFO": USER_ID, request_no
+staging."CFJL_CRMII_TSHGJ": zsmc, czjy, khzt, khjd
+realtime."RT_CRHKH_CRH_HIS_HIS_BUSINFLOWRECORD": business_flag, curr_datetime, business_remark, request_no
+
+42
+dwdata."dwd_trade_crhsc_crh_mall_mallrationplan": client_id, product_code, product_name, entrust_balance, curr_ration_times, curr_ration_balance, ration_deal_flag, next_pay_date, serial_no
+dwdata."dwd_trade_crhsc_crh_mall_mallrationexecute": occur_date, status, error_info, apply_serial_no
+
+43
+"REALTIME"."RT_CRHKH_CRH_SBC_AUDITRECORD": anode_id, operator_status, request_no, create_date, create_time
+staging."CRHKH_CRH_HIS_HIS_AUDITRECORD": anode_id, operator_status, request_no, create_date, create_time
+"REALTIME"."RT_CRHKH_CRH_SBC_ACCEPTANCE": request_no, fund_account, CLIENT_NAME, sub_businflow_no, businflow_no
+staging."CRHKH_CRH_HIS_HIS_ACCEPTANCE": request_no, fund_account, CLIENT_NAME, sub_businflow_no, businflow_no
+"REALTIME"."RT_CRHKH_CRH_SUIT_PRODSUITINFO": ta_code, prod_name, product_flag
+"REALTIME"."RT_CRHKH_CRH_SUIT_SUBPRODSUITINFO": sub_prod_code, sub_prod_name, begin_datetime, end_datetime, is_suit, ta_code
+"REALTIME"."RT_EGT_CIF_TYWQQ": khh, khmc, req_data, sqrq, sqsj, ywdm, clzt
+
+
+44
+realtime."RT_CRHKH_CRH_SBC_ACCEPTANCE": request_no, fund_account, CLIENT_NAME, BRANCH_NO, status, sub_serial_no, sub_businflow_no, create_date, create_time
+staging."CRHKH_CRH_HIS_HIS_ACCEPTANCE": request_no, fund_account, CLIENT_NAME, BRANCH_NO, status, sub_serial_no, sub_businflow_no, CREATE_DATE, create_time
+realtime."RT_CRHKH_CRH_SUIT_PRODSUITINFO": ta_code, prod_name, product_flag
+realtime."RT_CRHKH_CRH_SUIT_SUBPRODSUITINFO": sub_prod_code, sub_prod_name, begin_datetime, end_datetime, is_suit, ta_code
+realtime."RT_CRHKH_CRH_SBC_AUDITRECORD": request_no, operator_status, create_date, create_time, op_remark, anode_id
+staging."CRHKH_CRH_HIS_HIS_AUDITRECORD": request_no, operator_status, create_date, create_time, op_remark, anode_id
+realtime."RT_OTC_OTCTS_OTC_TRD_ORDERS": app_sno, CUACCT_CODE, CUST_NAME, ORG_CODE, inst_code, INST_SNAME, app_timestamp, visit_stat
+staging."OTC_OTCTSHIS_OTC_HIS_TRD_ORDERS": app_sno, CUACCT_CODE, CUST_NAME, ORG_CODE, inst_code, INST_SNAME, APP_TIMESTAMP, visit_stat
+realtime."RT_EGT_CIF_TYWQQ": id, khh, khmc, yyb, clzt, req_data, sqrq, sqsj, ywdm
+realtime."RT_EGT_CIF_TYWQQ_CZLS": ywqqid, action, BZSM
+staging."OTC_OTCTS_OTC_INST_BASE_INFO": INST_CODE, INST_SNAME, inst_type, inst_cls
+45
+"REALTIME"."RT_CRHKH_CRH_SBC_AUDITRECORD": request_no, create_date, create_time
+"STAGING"."CRHKH_CRH_HIS_HIS_AUDITRECORD": request_no, create_date, create_time
+"REALTIME"."RT_CRHKH_CRH_SBC_ACCEPTANCE": request_no, fund_account, CLIENT_NAME, sub_businflow_no, businflow_no
+"STAGING"."CRHKH_CRH_HIS_HIS_ACCEPTANCE": request_no, fund_account, CLIENT_NAME, sub_businflow_no, businflow_no
+"REALTIME"."RT_CRHKH_CRH_SUIT_PRODSUITINFO": ta_code, prod_name, product_flag
+"REALTIME"."RT_CRHKH_CRH_SUIT_SUBPRODSUITINFO": ta_code, sub_prod_code, sub_prod_name, begin_datetime, end_datetime, is_suit
+
+46
+realtime."RT_CRHKH_CRH_SBC_ACCEPTANCE":request_no, fund_account, CLIENT_NAME, BRANCH_NO, status, sub_serial_no, create_date, create_time, businflow_no, sub_businflow_no, sub_businflow_detail
+"STAGING"."CRHKH_CRH_HIS_HIS_ACCEPTANCE":request_no, fund_account, CLIENT_NAME, BRANCH_NO, status, sub_serial_no, create_date, create_time, businflow_no, sub_businflow_no, sub_businflow_detail
+realtime."RT_CRHKH_CRH_SUIT_PRODSUITINFO":ta_code, prod_name, product_flag
+realtime."RT_CRHKH_CRH_SUIT_SUBPRODSUITINFO":ta_code, sub_prod_code, sub_prod_name, begin_datetime, end_datetime, is_suit
+realtime."RT_CRHKH_CRH_SBC_AUDITRECORD":request_no, operator_status, create_date, create_time, op_remark, anode_id
+"STAGING"."CRHKH_CRH_HIS_HIS_AUDITRECORD":request_no, operator_status, create_date, create_time, op_remark, anode_id
+realtime."RT_EGT_CIF_TYWQQ":id, khh, khmc, yyb, clzt, req_data, ywdm, SQRQ, SQSJ
+realtime."RT_EGT_CIF_TYWQQ_CZLS":ywqqid, BZSM, action
+"DW"."DWD_PROD_PRODCODE":PROD_NAME, PROD_CODE, PROD_TYPE, PROD_SUBTYPE
+realtime."RT_DDSDX_SDX_TKHXYQSLS":zjzh, cpdm, qsrq, qssj
+"DW"."DWD_ACC_FUNDACC":fund_acc_no, MAIN_FLAG, fund_acc_attr, FUND_ACC_STATUS, CLIENT_ID, BRANCH_CODE
+realtime."RT_HSOTC_HS_PRD_PRD_BUSIN_ENTRUST":CLIENT_ID, BUSIN_CATEGORY, prod_code, PROD_REVISIT_STATUS, FUND_ACCOUNT, curr_date, curr_milltime
+"HIS_STAGING"."HSOTC_CQS_PRD_BUSIN_ENTRUST":CLIENT_ID, BUSIN_CATEGORY, prod_code, init_date, FUND_ACCOUNT
+"STAGING"."DDSDX_SDX_TKHYWSX":khh
+staging."CFJL_CRMII_TRYXX":khh, ZHZT, ID, dyyh
+staging."CFJL_CRMII_TTDBM":ZT, TDZ, ID
+staging."CFJL_CRMII_TTDCY":ZT, TD, RYXX
+staging."CFJL_CRMII_TKHGX":ryxx, ZT, gxlx
+
+47
+realtime."RT_CRHKH_CRH_SBC_ACCEPTANCE": request_no, fund_account, CLIENT_NAME, BRANCH_NO, sub_businflow_no, sub_businflow_detail, status, sub_serial_no, create_date, create_time
+STAGING."CRHKH_CRH_HIS_HIS_ACCEPTANCE": request_no, fund_account, CLIENT_NAME, BRANCH_NO, sub_businflow_no, sub_businflow_detail, status, sub_serial_no, CREATE_DATE, create_time
+realtime."RT_CRHKH_CRH_SUIT_PRODSUITINFO": ta_code, prod_name, product_flag
+realtime."RT_CRHKH_CRH_SUIT_SUBPRODSUITINFO": ta_code, sub_prod_code, sub_prod_name, begin_datetime, end_datetime, is_suit
+realtime."RT_CRHKH_CRH_SBC_AUDITRECORD": request_no, operator_status, create_date, create_time, op_remark, anode_id
+STAGING."CRHKH_CRH_HIS_HIS_AUDITRECORD": request_no, operator_status, create_date, create_time, op_remark, anode_id
+realtime."RT_EGT_CIF_TYWQQ": id, khh, khmc, yyb, clzt, req_data, sqrq, sqsj, ywdm
+realtime."RT_EGT_CIF_TYWQQ_CZLS": ywqqid, action, BZSM, cljgsm
+DW."DWD_PROD_PRODCODE": PROD_CODE, PROD_NAME, PROD_TYPE, PROD_SUBTYPE
+realtime."RT_DDSDX_SDX_TKHXYQSLS": zjzh, cpdm, qsrq, qssj
+DW."DWD_ACC_FUNDACC": fund_acc_no, CLIENT_ID, MAIN_FLAG, fund_acc_attr, FUND_ACC_STATUS, BRANCH_CODE
+REALTIME."RT_HSOTC_HS_PRD_PRD_BUSIN_ENTRUST": CLIENT_ID, BUSIN_CATEGORY, prod_code, PROD_REVISIT_STATUS, FUND_ACCOUNT, curr_date, curr_milltime
+HIS_STAGING."HSOTC_CQS_PRD_BUSIN_ENTRUST": CLIENT_ID, BUSIN_CATEGORY, prod_code, PROD_REVISIT_STATUS, FUND_ACCOUNT, init_date
+STAGING."CFJL_CRMII_TKHGX": khh, gxlx, ryxx, ZT
+STAGING."CFJL_CRMII_TRYXX": id, ZHZT, dyyh
+
+48
+realtime."RT_CRHKH_CRH_SBC_ACCEPTANCE": request_no, fund_account, CLIENT_NAME, BRANCH_NO, status, sub_serial_no, create_date, create_time, businflow_no, sub_businflow_no
+"STAGING"."CRHKH_CRH_HIS_HIS_ACCEPTANCE": request_no, fund_account, CLIENT_NAME, BRANCH_NO, status, sub_serial_no, CREATE_DATE, businflow_no, sub_businflow_no
+realtime."RT_CRHKH_CRH_SUIT_PRODSUITINFO": ta_code, prod_name, product_flag
+realtime."RT_CRHKH_CRH_SUIT_SUBPRODSUITINFO": sub_prod_code, sub_prod_name, begin_datetime, end_datetime, is_suit, ta_code
+realtime."RT_CRHKH_CRH_SBC_AUDITRECORD": request_no, operator_status, create_date, create_time, op_remark, anode_id
+"STAGING"."CRHKH_CRH_HIS_HIS_AUDITRECORD": request_no, operator_status, create_date, create_time, op_remark, anode_id
+realtime."RT_EGT_CIF_TYWQQ": id, khh, khmc, yyb, clzt, req_data, sqrq, sqsj, ywdm
+realtime."RT_EGT_CIF_TYWQQ_CZLS": ywqqid, action, BZSM, cljgsm
+"DW"."DWD_PROD_PRODCODE": PROD_CODE, PROD_NAME, PROD_TYPE, PROD_SUBTYPE
+realtime."RT_DDSDX_SDX_TKHXYQSLS": zjzh, cpdm, qsrq, qssj
+"DW"."DWD_ACC_FUNDACC": fund_acc_no, fund_acc_name, BRANCH_CODE, MAIN_FLAG, FUND_ACC_ATTR, FUND_ACC_STATUS, CLIENT_ID
+"REALTIME"."RT_HSOTC_HS_PRD_PRD_BUSIN_ENTRUST": CLIENT_ID, BUSIN_CATEGORY, prod_code, FUND_ACCOUNT, PROD_REVISIT_STATUS, curr_date, curr_milltime
+"HIS_STAGING"."HSOTC_CQS_PRD_BUSIN_ENTRUST": CLIENT_ID, BUSIN_CATEGORY, prod_code, FUND_ACCOUNT, init_date, PROD_REVISIT_STATUS
+"STAGING"."DDSDX_SDX_TKHYWSX": khh, tzzfl
+staging."CFJL_CRMII_TKHGX": khh, gxlx, ryxx, ZT
+staging."CFJL_CRMII_TRYXX": id, ZHZT, dyyh
+
+49
+"REALTIME"."RT_CRHKH_CRH_SBC_AUDITRECORD": request_no, create_date, create_time, anode_id, operator_status
+"STAGING"."CRHKH_CRH_HIS_HIS_AUDITRECORD": request_no, create_date, create_time, anode_id, operator_status
+"REALTIME"."RT_CRHKH_CRH_SBC_ACCEPTANCE": request_no, fund_account, CLIENT_NAME, sub_businflow_no, businflow_no
+"STAGING"."CRHKH_CRH_HIS_HIS_ACCEPTANCE": request_no, fund_account, CLIENT_NAME, sub_businflow_no, businflow_no
+"REALTIME"."RT_CRHKH_CRH_SUIT_PRODSUITINFO": ta_code, prod_name, product_flag
+"REALTIME"."RT_CRHKH_CRH_SUIT_SUBPRODSUITINFO": sub_prod_code, sub_prod_name, begin_datetime, end_datetime, is_suit, ta_code
+"REALTIME"."RT_EGT_CIF_TYWQQ": khh, khmc, req_data, sqrq, sqsj, ywdm, clzt
+
+50
+realtime."RT_CRHKH_CRH_SBC_ACCEPTANCE": request_no, fund_account, CLIENT_NAME, BRANCH_NO, status, sub_serial_no, sub_businflow_no, create_date, create_time, businflow_no
+STAGING."CRHKH_CRH_HIS_HIS_ACCEPTANCE": request_no, fund_account, CLIENT_NAME, BRANCH_NO, status, sub_serial_no, sub_businflow_no, CREATE_DATE, businflow_no
+realtime."RT_CRHKH_CRH_SUIT_PRODSUITINFO": ta_code, prod_name, product_flag
+realtime."RT_CRHKH_CRH_SUIT_SUBPRODSUITINFO": ta_code, sub_prod_code, sub_prod_name, begin_datetime, end_datetime, is_suit
+realtime."RT_CRHKH_CRH_SBC_AUDITRECORD": request_no, operator_status, create_date, create_time, op_remark, anode_id
+STAGING."CRHKH_CRH_HIS_HIS_AUDITRECORD": request_no, operator_status, create_date, create_time, anode_id
+realtime."RT_OTC_OTCTS_OTC_TRD_ORDERS": app_sno, CUACCT_CODE, CUST_NAME, ORG_CODE, inst_code, INST_SNAME, app_timestamp, visit_stat
+STAGING."OTC_OTCTSHIS_OTC_HIS_TRD_ORDERS": app_sno, CUACCT_CODE, CUST_NAME, ORG_CODE, inst_code, INST_SNAME, APP_TIMESTAMP, visit_stat
+realtime."RT_EGT_CIF_TYWQQ": id, khh, khmc, yyb, clzt, req_data, ywdm, SQRQ, sqsj
+realtime."RT_EGT_CIF_TYWQQ_CZLS": ywqqid, action, BZSM
+STAGING."OTC_OTCTS_OTC_INST_BASE_INFO": INST_CODE, INST_SNAME, inst_type, inst_cls
+dw."DWD_ACC_FUNDACC": fund_acc_no, CLIENT_ID, fund_acc_attr, MAIN_FLAG
+STAGING."DDSDX_SDX_TKHYWSX": khh, tzzfl
+
+51
+realtime."RT_CRHKH_CRH_SBC_ACCEPTANCE": request_no, fund_account, CLIENT_NAME, BRANCH_NO, status, sub_businflow_no, sub_serial_no, create_date, create_time, businflow_no
+STAGING."CRHKH_CRH_HIS_HIS_ACCEPTANCE": request_no, fund_account, CLIENT_NAME, BRANCH_NO, status, sub_businflow_no, sub_serial_no, CREATE_DATE, create_time, businflow_no
+realtime."RT_CRHKH_CRH_SUIT_PRODSUITINFO": ta_code, prod_name, product_flag
+realtime."RT_CRHKH_CRH_SUIT_SUBPRODSUITINFO": ta_code, sub_prod_code, sub_prod_name, begin_datetime, end_datetime, is_suit
+realtime."RT_CRHKH_CRH_SBC_AUDITRECORD": request_no, operator_status, create_date, create_time, op_remark, anode_id
+STAGING."CRHKH_CRH_HIS_HIS_AUDITRECORD": request_no, operator_status, create_date, create_time, op_remark, anode_id
+realtime."RT_EGT_CIF_TYWQQ": id, khh, khmc, yyb, clzt, req_data, sqrq, sqsj, ywdm
+realtime."RT_EGT_CIF_TYWQQ_CZLS": ywqqid, action, BZSM, cljgsm
+DW."DWD_PROD_PRODCODE": PROD_CODE, PROD_NAME, PROD_TYPE, PROD_SUBTYPE
+realtime."RT_DDSDX_SDX_TKHXYQSLS": zjzh, cpdm, qsrq, qssj
+dw."DWD_ACC_FUNDACC": fund_acc_no, CLIENT_ID, MAIN_FLAG, fund_acc_attr, FUND_ACC_STATUS
+REALTIME."RT_HSOTC_HS_PRD_PRD_BUSIN_ENTRUST": CLIENT_ID, BUSIN_CATEGORY, prod_code, FUND_ACCOUNT, PROD_REVISIT_STATUS, curr_date, curr_milltime
+HIS_STAGING."HSOTC_CQS_PRD_BUSIN_ENTRUST": CLIENT_ID, BUSIN_CATEGORY, prod_code, FUND_ACCOUNT, PROD_REVISIT_STATUS, init_date
+STAGING."DDSDX_SDX_TKHYWSX": khh
+staging."CFJL_CRMII_TRYXX": ID, ZHZT, dyyh
+staging."CFJL_CRMII_TTDBM": ZT, TDZ, ID
+staging."CFJL_CRMII_TTDCY": ZT, TD, RYXX
+staging."CFJL_CRMII_TKHGX": ZT, ryxx, gxlx, khh
+
+
+52
+realtime."RT_CRHKH_CRH_SBC_ACCEPTANCE": request_no, fund_account, CLIENT_NAME, BRANCH_NO, status, sub_serial_no, create_date, create_time, businflow_no, sub_businflow_no, sub_businflow_detail
+realtime."RT_CRHKH_CRH_SUIT_PRODSUITINFO": ta_code, prod_name, product_flag
+realtime."RT_CRHKH_CRH_SUIT_SUBPRODSUITINFO": ta_code, sub_prod_code, sub_prod_name, begin_datetime, end_datetime, is_suit
+realtime."RT_CRHKH_CRH_SBC_AUDITRECORD": request_no, operator_status, create_date, create_time, op_remark, anode_id
+realtime."RT_EGT_CIF_TYWQQ": id, khh, khmc, yyb, clzt, req_data, sqrq, sqsj, ywdm
+realtime."RT_EGT_CIF_TYWQQ_CZLS": ywqqid, action, BZSM
+DW."DWD_PROD_PRODCODE": PROD_CODE, PROD_NAME, PROD_TYPE, PROD_SUBTYPE
+realtime."RT_DDSDX_SDX_TKHXYQSLS": zjzh, cpdm, qsrq, qssj
+realtime."RT_HSOTC_HS_PRD_PRD_BUSIN_ENTRUST": CLIENT_ID, BUSIN_CATEGORY, prod_code, FUND_ACCOUNT, PROD_REVISIT_STATUS, curr_date, curr_milltime
+HIS_STAGING."HSOTC_CQS_PRD_BUSIN_ENTRUST": CLIENT_ID, BUSIN_CATEGORY, prod_code, FUND_ACCOUNT, PROD_REVISIT_STATUS, init_date
+DW."DWD_ACC_FUNDACC": fund_acc_no, fund_acc_name, BRANCH_CODE, MAIN_FLAG, FUND_ACC_ATTR, FUND_ACC_STATUS, CLIENT_ID
+STAGING."CRHKH_CRH_HIS_HIS_ACCEPTANCE": request_no, fund_account, CLIENT_NAME, BRANCH_NO, status, sub_businflow_no, sub_businflow_detail, CREATE_DATE
+STAGING."CRHKH_CRH_HIS_HIS_AUDITRECORD": request_no, operator_status, create_date, create_time, anode_id
+STAGING."DDSDX_SDX_TKHYWSX": khh, tzzfl
+
+53
+realtime."RT_CRHKH_CRH_SBC_ACCEPTANCE": request_no, fund_account, CLIENT_NAME, BRANCH_NO, status, sub_serial_no, create_date, create_time, businflow_no, SUB_BUSINFLOW_NO, SUB_BUSINFLOW_DETAIL
+STAGING."CRHKH_CRH_HIS_HIS_ACCEPTANCE": request_no, fund_account, CLIENT_NAME, BRANCH_NO, status, sub_serial_no, CREATE_DATE, create_time, businflow_no, SUB_BUSINFLOW_NO, SUB_BUSINFLOW_DETAIL
+realtime."RT_CRHKH_CRH_SUIT_PRODSUITINFO": ta_code, prod_name, product_flag
+realtime."RT_CRHKH_CRH_SUIT_SUBPRODSUITINFO": ta_code, sub_prod_code, sub_prod_name, begin_datetime, end_datetime, is_suit
+realtime."RT_CRHKH_CRH_SBC_AUDITRECORD": request_no, operator_status, create_date, create_time, op_remark, anode_id
+STAGING."CRHKH_CRH_HIS_HIS_AUDITRECORD": request_no, operator_status, create_date, create_time, op_remark, anode_id
+realtime."RT_EGT_CIF_TYWQQ": id, khh, khmc, yyb, clzt, req_data, ywdm, SQRQ, sqsj
+realtime."RT_EGT_CIF_TYWQQ_CZLS": ywqqid, action, BZSM, cljgsm
+DW."DWD_PROD_PRODCODE": PROD_NAME, PROD_CODE, PROD_TYPE, PROD_SUBTYPE
+realtime."RT_DDSDX_SDX_TKHXYQSLS": zjzh, cpdm, qsrq, qssj
+DW."DWD_ACC_FUNDACC": fund_acc_no, MAIN_FLAG, fund_acc_attr, FUND_ACC_STATUS, CLIENT_ID, BRANCH_CODE
+REALTIME."RT_HSOTC_HS_PRD_PRD_BUSIN_ENTRUST": CLIENT_ID, BUSIN_CATEGORY, prod_code, FUND_ACCOUNT, PROD_REVISIT_STATUS, curr_date, curr_milltime
+HIS_STAGING."HSOTC_CQS_PRD_BUSIN_ENTRUST": CLIENT_ID, BUSIN_CATEGORY, prod_code, FUND_ACCOUNT, PROD_REVISIT_STATUS, init_date
+STAGING."DDSDX_SDX_TKHYWSX": khh
+
+
+54
+realtime."RT_CRHKH_CRH_SBC_ACCEPTANCE": request_no, fund_account, CLIENT_NAME, BRANCH_NO, status, sub_businflow_no, sub_businflow_detail, create_date, create_time, sub_serial_no
+STAGING."CRHKH_CRH_HIS_HIS_ACCEPTANCE": request_no, fund_account, CLIENT_NAME, BRANCH_NO, status, sub_businflow_no, sub_businflow_detail, CREATE_DATE, create_time, sub_serial_no
+realtime."RT_CRHKH_CRH_SUIT_PRODSUITINFO": ta_code, prod_name, product_flag
+realtime."RT_CRHKH_CRH_SUIT_SUBPRODSUITINFO": ta_code, sub_prod_code, sub_prod_name, begin_datetime, end_datetime, is_suit
+realtime."RT_CRHKH_CRH_SBC_AUDITRECORD": request_no, operator_status, create_date, create_time, op_remark, anode_id
+STAGING."CRHKH_CRH_HIS_HIS_AUDITRECORD": request_no, operator_status, create_date, create_time, op_remark, anode_id
+realtime."RT_EGT_CIF_TYWQQ": id, khh, khmc, yyb, clzt, req_data, sqrq, sqsj, ywdm
+realtime."RT_EGT_CIF_TYWQQ_CZLS": ywqqid, action, BZSM, cljgsm
+DW."DWD_PROD_PRODCODE": PROD_CODE, PROD_NAME, PROD_TYPE, PROD_SUBTYPE
+realtime."RT_DDSDX_SDX_TKHXYQSLS": zjzh, cpdm, qsrq, qssj
+DW."DWD_ACC_FUNDACC": fund_acc_no, fund_acc_name, BRANCH_CODE, MAIN_FLAG, fund_acc_attr, FUND_ACC_STATUS, CLIENT_ID
+REALTIME."RT_HSOTC_HS_PRD_PRD_BUSIN_ENTRUST": CLIENT_ID, BUSIN_CATEGORY, prod_code, FUND_ACCOUNT, PROD_REVISIT_STATUS, curr_date, curr_milltime
+HIS_STAGING."HSOTC_CQS_PRD_BUSIN_ENTRUST": CLIENT_ID, BUSIN_CATEGORY, prod_code, FUND_ACCOUNT, PROD_REVISIT_STATUS, init_date, curr_milltime
+STAGING."DDSDX_SDX_TKHYWSX": khh
+
+55
+
+realtime."RT_EGT_CIF_TYWQQ": khh, ywdm, sqrq, clzt
+realtime."RT_CRHKH_CRH_SBC_AUDITRECORD": operator_type, create_date, request_no, operator_status
+staging."CRHKH_CRH_HIS_HIS_AUDITRECORD": operator_type, create_date, request_no, operator_status
+realtime."RT_CRHKH_CRH_SBC_ACCEPTANCE": request_no, businflow_no, fund_account
+staging."CRHKH_CRH_HIS_HIS_ACCEPTANCE": request_no, businflow_no, fund_account
+
+56
+realtime."RT_EGT_CIF_TYWQQ": khh, ywdm, sqrq, clzt
+realtime."RT_CRHKH_CRH_SBC_ACCEPTANCE": fund_account, businflow_no, status
+

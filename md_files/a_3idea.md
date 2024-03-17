@@ -9,8 +9,21 @@ flink-1.17用不了，新建的就能用lombok不知道怎么回事
 # 问题已解决(待回顾)
 
 #### 编译时找不到主类
+
+```mysql
+#第一次解决
 因为.class文件必须要和java文件在一个项目下，才能读取到。所以.class编译目录必须和项目目录相同
 project stucture => project 把output目录 更改为项目全路径\out =>moudle模块 选择inherit project 会自动读取项目路径
+
+#第二种情况
+配置了project stucture 里的每个module的output目录，改的和其他能正常运行的maven的一样的project stucture,还是不行。
+运行时，编译后项目路径下找不到.class文件,所以肯定找不到类.
+网上说是idea缓存的问题，执行清理缓存,也没有解决。
+最后是把.idea文件删除了，idea重新导入整个项目，才可以的。
+
+```
+
+
 
 
 

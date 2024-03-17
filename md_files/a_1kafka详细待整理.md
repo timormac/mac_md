@@ -113,6 +113,59 @@ https://www.cnblogs.com/linbingdong/p/6253479.html
 
 
 
+# 查看日志排查问题
+
+### kafka启动不起来
+
+```mysql
+#问题描述
+kafka启动后,自己挂掉
+
+#日志位置
+在logs目录下的:kafkaServer.out文件
+因为我在server.properties文件中设置logs.dir 为另一个目录，所以日志和数据分开了
+
+#日志报错
+找到报错如下：
+[2024-03-16 16:08:39,598] ERROR Error while creating ephemeral at /brokers/ids/0, node already exists and owner '72058210558017539' does not match current session '72060294662848513' (kafka.zk.KafkaZkClient$CheckedEphemeral)
+[2024-03-16 16:08:39,603] ERROR [KafkaServer id=0] Fatal error during KafkaServer startup. Prepare to shutdown (kafka.server.KafkaServer)
+org.apache.zookeeper.KeeperException$NodeExistsException: KeeperErrorCode = NodeExists
+	at org.apache.zookeeper.KeeperException.create(KeeperException.java:126)
+	at kafka.zk.KafkaZkClient$CheckedEphemeral.getAfterNodeExists(KafkaZkClient.scala:1815)
+	at kafka.zk.KafkaZkClient$CheckedEphemeral.create(KafkaZkClient.scala:1753)
+	at kafka.zk.KafkaZkClient.checkedEphemeralCreate(KafkaZkClient.scala:1720)
+	at kafka.zk.KafkaZkClient.registerBroker(KafkaZkClient.scala:93)
+	at kafka.server.KafkaServer.startup(KafkaServer.scala:270)
+	at kafka.server.KafkaServerStartable.startup(KafkaServerStartable.scala:44)
+	at kafka.Kafka$.main(Kafka.scala:84)
+	at kafka.Kafka.main(Kafka.scala)
+	
+	
+#原因分析
+ERROR Error while creating ephemeral at /brokers/ids/0, node already exists and owner '72058210558017539' does not match current session '72060294662848513'：这里指出在尝试创建临时节点时遇到了节点已经存在的问题，并且节点的所有者与当前会话不匹配。
+
+org.apache.zookeeper.KeeperException$NodeExistsException: KeeperErrorCode = NodeExists：这是 Zookeeper 报告的异常，指示节点已经存在。
+
+这种错误通常发生在以下情况下：
+
+Kafka 服务器重启：如果 Kafka 服务器在 Zookeeper 中注册了节点，并且在重启时尝试重新注册相同的节点，就会导致此错误。
+
+Zookeeper 数据残留：可能是由于 Zookeeper 数据未正确清理或者上一次 Kafka 服务器关闭时未正确注销节点导致的。
+
+#解决方法
+ ./zkCli.sh  -server localhost:2181  进去zk
+ ls /kafka   查看zk中kafka节点问题
+ 
+ 
+ #事故总结
+ 因为执行kafka stop 并没有关系kafka，手动kill -9 kafka进程,不知道是不是这个原因,导致了zookeeper上节点数据未清理干净
+ 也有可能是wifi断开的原因，具体还待回顾
+```
+
+
+
+
+
 # 客户端指令
 
 kafka-topic.sh 什么都不输入，就会显示有哪些参数可以输出

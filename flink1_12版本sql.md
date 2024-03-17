@@ -1,72 +1,42 @@
-# 开户断点需求问题
+# 目前需解决问题
+
+#### 回撤流怎么处理？
 
 ```mysql
-#会话窗口必然关闭问题
-现在设置一个会话窗口,视频超过18分钟没来数据发短信,身份证验证超过15分钟没数据发短信
-其他数据超过30分钟,发短信。
-问题是视频和身份验证都正常，到最后一步提交了，整个status = 0的状态都走完事了。
-最后进kafka的数据是status =1的数据,窗口必然会关闭一次，输出一个消息。
+#回撤流会输出多条吗？
 
-每次会话窗口关闭时，取最后一条,如果最后一条信息的提交开户申请，那么说明流程走完，那么不需要提醒了。要做where 判断
+select 
+*
+from (
+
+    SELECT 
+    user_id,
+    mobile_tel,
+    last_update_detetime ,
+    ROW_NUMBER() OVER(PARTITION BY user_id, mobile_tel order by last_update_detetime) rn
+    from rt_crhkh_crh_wskh_userqueryextinfo
+)
+where rn < 3;
 
 
-#kafka线上数据样式拉取
-等庄辉老师拉取
-
-
-#groupby + row_num问题
-
-
-
+当有乱序数据时,会重新打乱之前的1,2排序,打印结果是：
++----+--------------------------------+--------------------------------+--------------------------------+----------------------+
+| op |                        user_id |                     mobile_tel |           last_update_detetime |                   rn |
++----+--------------------------------+--------------------------------+--------------------------------+----------------------+
+| +I |                        3413602 |                    17832300656 |            2024-03-17 09:58:10 |                    1 |
+| +I |                        3413602 |                    17832300656 |            2024-03-17 09:58:20 |                    2 |
+| -U |                        3413602 |                    17832300656 |            2024-03-17 09:58:10 |                    1 |
+| +U |                        3413602 |                    17832300656 |            2024-03-17 08:35:33 |                    1 |
+| -U |                        3413602 |                    17832300656 |            2024-03-17 09:58:20 |                    2 |
+| +U |                        3413602 |                    17832300656 |            2024-03-17 09:58:10 |                    2 |
 ```
 
 
 
-# 目前需解决问题
+#### 小问题汇总
 
 ```mysql
-#2
-代码测试groupby + lastValue() 是不是每次更新就输出一条? 不更新就不输出。目前代码报错
-
-#待解决1
-会话窗口+group by mobie + lastValue()
-窗口关闭时会输出什么呢？？？
-
-#3
-测试 groupby + row_number的能执行的逻辑，意义用途.
-这个是为了,开窗口后取第一条,然后获取价格最高的订单整条信息，
-但是因为不group by的字段,无法select出来。所以groupby把你需要的所有字段都弄过来。
-
-但是执行逻辑是怎么回事呢？？？？
-
-
-#4 窗口内不group by 全输出
-目前将窗口的数据全输出，并加一个窗口开始时间的标记
-然后用partition by 开窗函数来做筛选，来拿整条
-
 # 滑动窗口的写法有几种？？？
-
-#5 时间窗口,获取窗口内部row_number排序,然后获取整条数据
-select 
-orderno,
-spuid,
-price,
-create_time
-from(
-    select 
-    orderno,
-    spuid,
-    price,
-    create_time,
-    row_number()over( partition by spuid  order by price desc , create_time desc  ) as rk
-    from mock_order 
-    group by TUMBLE( proctime(), INTERVAL '20' second)
-)
-where rk = 1
-
-现在的问题就是group by来实现开窗,但是orderno不在groupby字段里,
-目前我的需求就是按spuid聚合，然后获取价格最高，时间最近的那条数据
-
 
 
 #窗口中的TUMBLE_ROWTIME(time_attr, interval)是什么？
@@ -79,36 +49,81 @@ where rk = 1
 
 # 问题已解决
 
+#### 小问题汇总
+
 ```mysql
 #临时视图,where无法过滤到数据
 因为`data` map<string, string> ,所以status是String形式,所以要status = '0' 如果是status = 0没有数据
+
 ```
 
 
 
-# 内网操作
+#### Field names must be unique
 
-#### 生产kafka拉取
+```mysql
+#问题原因
+开窗函数partition的字段,必须全部select出来, select后 rk<3 可以执行
+开窗函数partition的字段,没全部select出来,只能执行rk =1 活着rk=3进行等号操作
+开窗函数partition的字段,没全部select出来,执行rk<3 会报错：Field names must be unique. Found duplicates: [$3]
 
-登陆生产的袋鼠云，直接看kafka数据预览，然后复制出来,放到生产的安渡里
+在flink1.17中就没问题,解决了这个bug。flink1.12需要注意这个问题
 
-打开开发环境的安渡，把开发环境的安渡传到jira
+#错误sql
+没有select channel_code，导致的<3报错
+
+select   
+mobile_tel,  
+business_flag_last,  
+last_update_detetime,  
+rn  
+from(  
+    SELECT  
+    mobile_tel,  
+    business_flag_last,  
+    last_update_detetime,  
+    ROW_NUMBER() OVER(PARTITION BY mobile_tel,business_flag_last,channel_code,to_date(last_update_detetime) order by last_update_detetime) rn  
+    from rt_crhkh_crh_wskh_userqueryextinfo  
+) t  
+where t.rn < 3;
+```
 
 
 
+# 袋鼠云
 
-
-
-
-# 语法细节
-
-#### 1.12和1.10区别
+#### 注意事项
 
 ```mysql
 #袋鼠云勾选
 勾选嵌套json平铺
 {"b":{"c":3}} 会被拆成{"b_c":c} ，这个需要注意
+
+#在process
+
 ```
+
+
+
+# 语法细节
+
+#### 细节注意
+
+```mysql
+# ""和''选择问题
+'yyyy-MM-dd' 这个格式要用''不能""
+to_date( create_time,'yyyy-MM-dd' )  
+
+#临时视图,where无法过滤到数据
+因为`data` map<string, string> ,所以status是String形式,所以要status = '0' 如果是status = 0没有数据
+
+```
+
+
+
+
+
+
 
 #### 不支持的写法
 
@@ -120,16 +135,154 @@ TUMBLE_START(ptm, INTERVAL '20' SECOND) as window_start
 FROM mock_order
 ```
 
-#### 细节注意
+
+
+#### last_value配开窗/group by
 
 ```mysql
-SESSION(PROCTIME, INTERVAL '30' second) 都要大写
+#=配合滚动窗口使用,窗口关闭时,只返回最后一条数据
+ SELECT 
+ mobile_tel,
+ user_id,
+ lastvalue(channel_code) as channel_code,
+ SESSION_START(PROCTIME, INTERVAL '30' MINUTE) as start_t
+ from source_stream_crhkh_crh_wskh_mid
+ group by SESSION(PROCTIME, INTERVAL '30' MINUTE),mobile_tel,user_id
+ 
+ 
+ 
+ #和group by 连用
+ last_value和group by一起用, 和max()差不多,每来一条数据,就会更新，而且是个回撤流
+ first_value, 只输出一条,就是第一条来的数据,后序数据都被过滤掉了
+
+select  
+mobile_tel, 
+user_id, 
+first_value(last_update_detetime) as last_update_detetime 
+from rt_crhkh_crh_wskh_userqueryextinfo 
+group by mobile_tel,user_id;  
+ 
 
 ```
+
+
+
+#### 开窗函数必须写topn
+
+```mysql
+#无法直接用开窗
+SELECT 
+user_id,
+mobile_tel,
+last_update_detetime ,
+ROW_NUMBER() OVER(PARTITION BY user_id, mobile_tel order by last_update_detetime) rn
+from rt_crhkh_crh_wskh_userqueryextinfo
+
+直接用开窗会报错: "OVER windows' ordering in stream mode must be defined on a time attribute"
+
+
+#必须加入top条件
+加入topN 之后就不会报错了
+select 
+*
+from (
+
+    SELECT 
+    user_id,
+    mobile_tel,
+    last_update_detetime ,
+    ROW_NUMBER() OVER(PARTITION BY user_id, mobile_tel order by last_update_detetime) rn
+    from rt_crhkh_crh_wskh_userqueryextinfo
+)
+where rn < 3
+
+#partition 字段必须select出来
+开窗函数partition的字段,必须全部select出来, select后 rk<3 可以执行
+开窗函数partition的字段,没全部select出来,只能执行rk =1 活着rk=3进行等号操作
+开窗函数partition的字段,没全部select出来,执行rk<3 会报错：Field names must be unique. Found duplicates: [$3]
+
+在flink1.17中就没问题,解决了这个bug。flink1.12需要注意这个问题
+
+select 
+*
+from (
+
+    SELECT 
+    user_id,
+    mobile_tel,
+    last_update_detetime ,
+    ROW_NUMBER() OVER(PARTITION BY user_id, mobile_tel order by last_update_detetime) rn
+    from rt_crhkh_crh_wskh_userqueryextinfo
+)
+where rn < 3
+
+```
+
+#### row_number配groupby
+
+```mysql
+#注意事项
+这个写法partition 字段 和 order字段必须在groupby 中分组不然报错
+执行逻辑就是按groupby的数据先去重一遍数据，然后再做开窗
+
+select 
+*
+from (
+
+    SELECT 
+    user_id,
+    mobile_tel,
+    last_update_detetime ,
+    ROW_NUMBER() OVER(PARTITION BY user_id, mobile_tel order by last_update_detetime) rn
+    from rt_crhkh_crh_wskh_userqueryextinfo 
+    group by user_id,mobile_tel,last_update_detetime
+)
+where rn = 1
+
+输出结果：
+当有乱序时，会有回撤流
++----+--------------------------------+--------------------------------+--------------------------------+----------------------+
+| op |                        user_id |                     mobile_tel |           last_update_detetime |                   rn |
++----+--------------------------------+--------------------------------+--------------------------------+----------------------+
+| +I |                        3413602 |                    17832300656 |            2024-03-17 08:35:33 |                    1 |
+| -D |                        3413602 |                    17832300656 |            2024-03-17 08:35:33 |                    1 |
+| +I |                        3413602 |                    17832300656 |            2024-03-17 07:35:33 |                    1 |
+```
+
+
+
+#### distinct
+
+```mysql
+#用法
+如果你想要基于多个字段的组合去除重复的数据行，你可以在DISTINCT后面列出这些字段,也可以结合其他处理函数,比如处理日期等。
+这个查询会返回唯一的customer_id和dt组合。如果两个订单有相同的customer_id和dt，它们会被视为重复，并且只有一行会出现在结果中。
+SELECT DISTINCT 
+customer_id,
+date(last_update_detetime) as dt
+FROM orders;
+
+
+```
+
+
+
+
+
+
 
 #### 时间相关
 
 ```mysql
+#时间相关函数
+CURRENT_TIMESTAMP 2024-03-17 01:40:31.644
+CURRENT_TIME  01:40:31
+CURRENT_DATE  2024-03-17
+
+
+LOCALTIME
+LOCALTIMESTAMP
+
 #处理时间
 
 CREATE TABLE user_actions (
@@ -152,23 +305,6 @@ CREATE TABLE user_actions (
 ) WITH (
   ...
 );
-```
-
-
-
-#### 开窗函数
-
-```mysql
-#窗口函数报错
-"OVER windows' ordering in stream mode must be defined on a time attribute"
-
-说法1: 原因是窗口order必须指定watermark，而gpt说的，排序必须是时间类型，gpt不对，瞎说的。说法1也是不对的
-说法2:开窗函数必须跟着where rk <10这个条件，这个改了之后正确了
-
-官方文档：
-WHERE rownum <= N: Flink 需要 rownum <= N 才能识别一个查询是否为 Top-N 查询。 N 代表最大或最小的 N 条记录会被保留。
-[AND conditions]: 在 where 语句中，可以随意添加其他的查询条件，但其他条件只允许通过 AND 与 rownum <= N 结合使用
-
 ```
 
 
