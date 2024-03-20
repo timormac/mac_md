@@ -242,12 +242,21 @@ maven项目打包时在pom中添加
 
 
 
-### 修改源码并打包
+### 修改源码并编译
 
 ```sql
 #下载-source源码包
 flink-1.17-source.jar 带source的，里面都是java原文件，而不是.class字节码文件
+
+
+#编译
+注意:相同的代码，通过maven进行编译打成bin.tar的包,在不同操作系统上，可能会导致编译的二进制包不同,
+因此要把代码，传到linux服务器，再进行编译打包
 ```
+
+
+
+
 
 # 代码设计模式
 
@@ -260,8 +269,6 @@ flink-1.17-source.jar 带source的，里面都是java原文件，而不是.class
 queryTable()后返回一个新类，只有一个queryColumnName方法，调用后返回个新类只有FilterCloumnValue方法,
 这样就不怕用户不了解使用规则了。如果所有方法都写在一个类里，用户可能乱调用方法， 弄奇怪的排列组合
                                                        
-
-
 
 ```
 

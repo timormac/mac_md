@@ -1,5 +1,14 @@
 
 
+# 问题待解决
+
+```mysql
+#for循环+start with
+oracle中start with 没看懂
+```
+
+
+
 # dbeaver
 
 ```mysql
@@ -57,26 +66,64 @@ oracle中默认表名都是大些,如果sql中写的表名有小写，要加双�
 select * from ALL_ALL_TABLES where TABLE_NAME like '%TKH%'
 然后下钻表
 
+#注释
+单行注释
+-- abac 
+多行注释
+/* asd
+bcd */
+
 #字符串处理
 模糊查询  like '%a%'
 字符串拼接   'a' || 'b'
+LPAD(KHH,8, '0') KHH, -- KHH的值填充为长度为8的字符串，不足的部分在左侧用0填充，然后将结果作为KHH列返回。
 
 #数学函数
 
 
 #日期函数
 
+
+
+
+
+
+
+
+
+```
+
+#### 语法
+
+```mysql
+#set更新数据
+表A userid, value 表B userid,value 更新在b表出现过的的userid
+
+方式1:
+UPDATE A SET value = B.value
+FROM B WHERE A.userid = B.userid;
+
+方式2:
+  -- 这个写法不好，当select没数据时,会返回null，必须加exists判断。
+  -- 第一种写法更简洁，并且不加exists,并且是join写法,效率更高
+UPDATE A SET value = ( select value from b where b.userid = a.userid )
+where exists(  select 1 from b where b.userid = a.userid   )
+
+#start with ?????
+SELECT ID
+FROM LBORGANIZATION
+START WITH ID = I_YYB
+CONNECT BY PRIOR ID = FID
+这里使用了Oracle特有的层次查询语法。START WITH ID = I_YYB指定了层次查询的起点，即从LBORGANIZATION表中ID等于I_YYB的记录开始。CONNECT BY PRIOR ID = FID定义了父子关系，即每一行的ID值等于另一行的FID值时，这两行就构成了父子关系。这个查询返回了一个ID的集合，表示从I_YYB出发可以通过FID到ID的路径所形成的层次结构中的所有ID。
+
+
 #流程控制
-
-		-- case when
-    CASE WHEN condition1 THEN result1
-				WHEN condition2 THEN result2
-        ELSE result_default
-    END AS result
-
-
-
-
+-- case when
+CASE 
+	WHEN condition1 THEN result1
+  WHEN condition2 THEN result2
+	ELSE result_default
+END AS result
 
 
 
@@ -132,6 +179,28 @@ END prod_1;  --存储过程名字
 请注意，这只是一个简单的示例。实际的存储过程可以更复杂，包括循环、条件语句等。存储过程的语法和功能在不同的数据库管理系统中可能会有所不同。
 ```
 
+#### 物化视图
+
+```mysql
+#概念
+在Oracle数据库中，物化视图（Materialized View）是一种预先计算和存储的查询结果集，类似于视图，但是物化视图实际上会在数据库中创建一个表来存储查询结果，而不是仅仅保存查询的定义。这样可以提高查询性能，特别是对于复杂的查询或者需要频繁访问的查询。
+
+物化视图可以在需要的时候手动刷新，也可以根据定义的刷新策略自动刷新。当底层数据发生变化时，物化视图可以根据刷新策略自动更新，确保物化视图中的数据与源数据保持同步。
+
+物化视图的使用可以减少查询的计算量，提高查询性能，特别是在数据量庞大、查询复杂的情况下，物化视图可以显著提升查询性能。
+
+#物化视图不准确
+如果你有一个物化视图，它是用来统计今天订单的总金额，并且它是每隔整数小时刷新一次，那么在非刷新点（比如12:30）去查询这个物化视图时，你看到的数据将是最后一次刷新时的数据。
+
+在这个例子中，如果物化视图上次是在12:00刷新的，那么在12:30查询时，你看到的将是12:00时的统计数据，而不是12:30的实时数据。这意味着，如果在12:00到12:30之间有新的订单产生，这些新订单的金额不会被包括在你12:30看到的物化视图数据中。
+
+物化视图的优点在于查询速度快，因为它避免了实时计算数据的需要。然而，这种便利是以牺牲数据实时性为代价的。如果你需要实时的数据，那么物化视图可能不是最佳选择，或者你可能需要更频繁地刷新物化视图（例如，每分钟刷新一次），但这会增加系统的负担。
+
+在你的场景中，如果查询12:30的数据对实时性要求不高，使用物化视图仍然可以加快查询速度，因为你直接访问的是已经预计算和存储好的结果。但如果需要精确到最近的数据，你可能需要等到下一个整点刷新后，或者执行实时查询来获取最新的订单总金额。
+```
+
+
+
 #### 模块解析
 
 ```mysql
@@ -185,6 +254,14 @@ select * from pg_catalog.pg_tables where upper(tablename) like '%%'
 
 #分区表
 在pg中也有分区表,一个总表，会自动建一些分区表
+
+
+#set更新 
+表A userid, value 表B userid,value 更新在b表出现过的的userid
+UPDATE A
+SET value = B.value
+FROM B
+WHERE A.userid = B.userid;
 ```
 
 

@@ -102,7 +102,11 @@ else-if +tab自动生成(){}
 
 代码字母大小写切换  command + shift  + u
 
-批量替换字符     command +shift+r / win  ctrl+shift+r
+批量替换     command +shift+r / win  ctrl+shift+r
+
+生成方法注释    在方法前一行 /** +回车
+
+高亮注释      // TODO 
 
 
 
