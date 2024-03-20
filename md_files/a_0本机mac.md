@@ -48,6 +48,10 @@ Lpc19950419
 #paypal账号
 lpc19950419@163.com
 lpc19950419
+
+#oracle官网账号
+2867102374@qq.com
+Lpc19950419!
 ```
 
 # mac连接windows虚拟机
@@ -129,6 +133,8 @@ ssh -L 2181:B:2181 -L 9092:B:9092 -L 2182:C:2181 -L 9093:C:9092 -L 2183:D:2181 -
 soma体统带的，设置方式：
 
  打开左上方的系统设置=> 选择键盘=> 打开听写=> 选择快捷键即可完成。使用的时候,连续双击control快捷键, 想结束语音录制再点一下control
+
+
 
 #### 单击桌面回到桌面
 
@@ -244,6 +250,12 @@ Lpc19950419
 
 用pages打开word不乱码, 然后用pages导出新的word，用word打开新的word就不会乱码了
 
+#### 7 系统硬件信息
+
+搜索 系统信息,可以查看系统硬件
+
+#### 8
+
 
 
 # mac快捷键
@@ -263,6 +275,16 @@ Lpc19950419
 
 
 # mac本地软件
+
+#### homebrew
+
+下载指令brew install   
+
+brew search gcc，查找某个插件
+
+homebrew 下载的软件不用配置环境变量就能终端直接使用，和yum差不多. 
+
+homebrew下载的软件目录在 /usr/local里面
 
 #### mysql
 
@@ -289,4 +311,13 @@ lpc19950419
 ```
 
 
+
+#### postgresql
+
+```
+安装在application下,数据在application/data
+用户:postgres
+密码:121995
+端口:5432
+```
 

@@ -128,9 +128,23 @@ sshfs user@host:/remote/path /local/path：将远程主机的文件系统挂载�
 
 
 
-### 脚本结果输出文件
+### 脚本结果输出文件（后台进行）
 
+```mysql
+#方式1
 nohup  任务名    &  >> a.log
+这个目前好像只对bash指令的有效
+
+#方式2
+java代码中有print打印,这个按第一个执行,还是前台进行,并且control c之后会退出进程。
+nohup java -cp gdzh_kafka_mock-1.0-SNAPSHOT.jar KafkaMock  >> a.log 2>&1 &
+```
+
+
+
+
+
+
 
 ### 服务器交互相关
 

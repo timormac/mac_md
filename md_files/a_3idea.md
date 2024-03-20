@@ -102,6 +102,8 @@ else-if +tab自动生成(){}
 
 代码字母大小写切换  command + shift  + u
 
+批量替换字符     command +shift+r / win  ctrl+shift+r
+
 
 
 

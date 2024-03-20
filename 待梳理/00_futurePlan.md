@@ -1,5 +1,13 @@
 # 近期可做
 
+### 学习资料里的pdf
+
+java里的代码质量pdf
+
+linux里的shell和linux的pdf
+
+
+
 ### 源码计划
 
 去看flink或者spark或者hive，源码，查看如何将sql转化为flink，或者sparkRDD，或者mr任务的

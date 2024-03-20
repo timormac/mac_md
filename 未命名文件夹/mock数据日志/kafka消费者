@@ -1,0 +1,31 @@
+        //订阅主题,传一个Collctions,若只订阅一个主题,就只放一个元素就行
+        kafkaConsumer.subscribe(list);
+        while (true){
+            //手动设定拉取频率一次拉取的是一个batch的所有数据
+            ConsumerRecords<String, String> poll = kafkaConsumer.poll(2*1000L);
+            for (ConsumerRecord<String, String> record : poll) {
+
+
+                if(record.topic().equals("stream_in.rt_crhkh_crh_wskh_userqueryextinfo")){
+                    System.out.println("kafka源数据新增一条:"+record.value() );
+                }else if (record.topic().equals("stream_crhkh_crh_wskh_mid")){
+                    System.out.println("任务1过滤申请中,按天/手机号/flag开窗取1条:"+record.value() );
+
+                }else if (record.topic().equals("stream_mot_stream_account_break_ths_cc_mid")){
+                    System.out.println("任务2/任务3输出到同一条流中:"+record.value() );
+
+                }else if (record.topic().equals("stream_mot_stream_account_break_ths_cc")){
+                    System.out.println("任务4视频和非视频多条,按mobile/channel_code输出最早1条"+record.value() );
+
+                }else if (record.topic().equals("stream_mot_stream_account_break_ths_mot_mid")){
+                    System.out.println("任务6/任务7输出到同一条流中:"+record.value() );
+
+                }else if (record.topic().equals("stream_mot_stream_account_break_ths")){
+
+                    System.out.println("任务8:视频和非视频多条,按mobile/channel_code输出最早1条"+record.value() );
+                }else{
+                    System.out.println("不该存在的topic");
+                }
+
+
+            }

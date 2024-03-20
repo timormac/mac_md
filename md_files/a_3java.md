@@ -472,6 +472,16 @@ Set<String> columns = jsonObject.keySet();
 Collection<Object> values = jsonObject.values();
 
 
+//将某个value替换
+底层是map做的直接put覆盖就行
+ jsonObject.put("city", "Los Angeles");
+
+//替换嵌套json中的值
+先获取嵌套json,再put就行了
+JSONObject message = json.getJSONObject("message");
+message.put("name","tom");
+
+
 //将对象转为json
 String jsonString = JSON.toJSONString(student);
 
