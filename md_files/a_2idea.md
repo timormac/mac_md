@@ -102,7 +102,11 @@ else-if +tab自动生成(){}
 
 代码字母大小写切换  command + shift  + u
 
-批量替换     command +shift+r / win  ctrl+shift+r
+批量替换     方法1 : command +shift+r / win  ctrl+shift+r,  这个能替换目录下，项目下，moudule下的所有
+
+​					方法2: command +F 点左侧箭头  这个是替换本文件
+
+
 
 生成方法注释    在方法前一行 /** +回车
 
@@ -205,6 +209,19 @@ Lombok 是一款用于简化 Java 代码编写的插件，它可以自动生成�
 
 
 # idea其他设置
+
+#### 系统相关设置
+
+```mysql
+#开启时不直接打开项目
+settings => 首行的Appearrance => System Settings  =>取消勾选 reopen projects on startup
+
+
+
+
+```
+
+
 
 #### 配置maven 
 
@@ -316,7 +333,7 @@ settings=>plugins=>搜索scala下载=>project structure =>Global libarys=>点击
 
 
 
-# idea的使用
+# idea项目相关
 
 #### project选项
 

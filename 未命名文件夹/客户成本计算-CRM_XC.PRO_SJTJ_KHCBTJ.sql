@@ -107,6 +107,8 @@ BEGIN
            AND B.MON = I_MON
            AND B.ZQLB = D.ZQLB
            AND D.SYXS > 0;
+
+           
     UPDATE XC_DATA.TKHYDJYTJ A
        SET (A.CB /*净佣金摊占成本*/,
             A.CB_ZD /*最低净佣金摊占成本*/,

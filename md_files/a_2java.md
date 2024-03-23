@@ -260,6 +260,28 @@ flink-1.17-source.jar 带source的，里面都是java原文件，而不是.class
 
 # 代码设计模式
 
+### 类为什么要放到package下
+
+```mysql
+#路径如下
+java 
+	package1 
+		 B.java
+	package2	 
+		 D.java
+	A.java
+	C.java 
+	
+	C调用A类是直接能调用的，在同层级
+	B无法调用A类，B可以调用D类,因为A不在包下,所以导入写法是import A（默认是调用本路径包） ,但是在B类的路径下,是没有A的所以识别不到。
+	
+	
+
+
+```
+
+
+
 ### mysql查询工具
 
 ```mysql

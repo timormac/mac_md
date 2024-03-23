@@ -9,7 +9,40 @@ oracle中start with 没看懂
 
 
 
+# gp开发sql规范
+
+#### 数据分层
+
+```mysql
+#staging 源数据层
+可以增量采集的就增量采集
+表命名：staging/his_staging.源系统简称_源系统表用户名_源系统表名，分布键合理，必须有表及字段备注。
+涉及手工导入的数据放在import schema下面，以import.tb_xxx进行命名
+
+#dwd明细层
+1 按主题域命名   dwd.主题域简称_stage层表名
+2 数据清洗,字段映射
+3 增加load_time(timestamp)记录数据创建时间
+  时间：timestamp
+  大字段：text（源字段char(2000+)）
+  数字带精度：numeric(28,8)
+  数字不带精度：numeric(20)
+  整型：bigint
+
+
+#存储过程
+命名：sp_<目标表>
+
+
+
+
+```
+
+
+
 # dbeaver
+
+#### 快捷键
 
 ```mysql
 #表下钻
@@ -109,6 +142,10 @@ FROM B WHERE A.userid = B.userid;
 UPDATE A SET value = ( select value from b where b.userid = a.userid )
 where exists(  select 1 from b where b.userid = a.userid   )
 
+update a inner join b 
+on a.user_id=b.user_id 
+set a.value=b.values
+
 #start with ?????
 SELECT ID
 FROM LBORGANIZATION
@@ -124,8 +161,6 @@ CASE
   WHEN condition2 THEN result2
 	ELSE result_default
 END AS result
-
-
 
 ```
 
@@ -355,4 +390,49 @@ SELECT * FROM my_function(10, 'test');
 请记住，这只是一个示例，实际的存储过程将根据你的需求进行调整。在编写存储过程时，你需要根据实际的业务逻辑和数据库设计来决定使用哪些关键字和结构。
 
 ````
+
+
+
+# greenplum
+
+#### 简介
+
+```mysql
+Greenplum Database 是一个高性能的、大规模的数据仓库解决方案，它是基于 PostgreSQL 的一个开源数据库项目。Greenplum 被设计用来运行复杂的查询分析，支持多种数据仓库的工作负载，并能够处理大规模的数据集。
+
+Greenplum 和 PostgreSQL 的关系可以从以下几个方面来理解：
+
+1. **基础架构**：Greenplum 是在 PostgreSQL 的基础上构建的，它继承了 PostgreSQL 的许多特性和功能。Greenplum 的设计目标是扩展 PostgreSQL 的能力，使其能够处理分布式数据仓库的需求。
+
+2. **分布式系统**：Greenplum 对 PostgreSQL 进行了扩展，引入了分布式架构。它使用多个数据库实例（称为段或segment），这些实例分布在多个节点上，允许并行处理数据和查询。这种架构使得 Greenplum 特别适合于大规模数据处理。
+
+3. **并行处理**：Greenplum 强化了 PostgreSQL 的并行处理能力，支持并行数据加载、并行查询执行和并行管理任务。
+
+4. **兼容性**：由于 Greenplum 是基于 PostgreSQL 开发的，它保持了与 PostgreSQL 的兼容。这意味着大多数基于 PostgreSQL 的应用和工具也可以用于 Greenplum，而且 SQL 语言的使用方式也非常相似。
+
+5. **独立发展**：虽然 Greenplum 最初是基于 PostgreSQL 开发的，但它作为一个独立的项目，也有自己的发展路线和特色功能，比如对 MPP（Massive Parallel Processing）架构的支持。
+
+6. **开源社区**：Greenplum 和 PostgreSQL 都是开源项目，它们拥有各自的社区和贡献者。随着时间的推移，Greenplum 的代码库已经在很多方面与原始的 PostgreSQL 代码库产生了分歧，但两者之间仍然保持一定程度的互操作性和兼容性。
+
+总的来说，Greenplum 是 PostgreSQL 的一个衍生分支，专门为并行处理和数据仓库的需求进行了优化和扩展。随着两个项目的独立发展，Greenplum 逐渐形成了自己的特色和功能集，但它仍然保留了与 PostgreSQL 的紧密联系。
+```
+
+
+
+#### gp和hive离线数仓对比
+
+```mysql
+#即席查询
+hive对即席查询的支持很差
+gp 适合需要快速查询的数据仓库应用。
+大企业,基本都是2套数仓,gp的用来做快速的查询,hive的离线计算,来做一些更大规模的计算,并且不需要即席查询的场景
+在低延迟的跨库查询,查询多个库聚合的的单条等操作,hive性能很差,gp很好。
+
+#体量规模
+hive+hadoop可以拓展上千节点,gp虽然也是分布式数据库,但是拓展性没有hadoop好，
+因为涉及数据存到哪个节点，索引,事务等，规模不能想hadoop那么大
+
+hive+hadoop 适合处理PB级数据
+
+```
 

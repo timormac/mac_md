@@ -4,8 +4,6 @@
 
 
 
-视频进度p19
-
 
 
 # 问题待解决
@@ -1982,6 +1980,10 @@ select "a1",explode(array) from the_nba_championship;
 
   hive函数 lateral view 主要功能是将原本汇总在一条（行）的数据拆分成多条（行）成虚拟表，再与原表进行笛卡尔积，从而得到明细表。配合UDTF函数使用，一般情况下经常与explode函数搭配，explode的操作对象（列值）是 ARRAY 或者 MAP ,可以通过 split 函数将 String 类型的列值转成 ARRAY 来处理。
 
+
+
+a/b/c
+
 # hql案例
 
 
@@ -2034,6 +2036,8 @@ score
 #目标获取t2表分数所在分段
 最简单的是笛卡尔积，然后过滤满足 start<score<end
 
+#不用笛卡尔积
+
 ```
 
 
@@ -2052,6 +2056,8 @@ join  tmp on t1.id = tmp.superid
 
 报错SemanticException Recursive cte cte detected (cycle: cte -> cte).
 ```
+
+
 
 #### 部门前3不开窗(待定)
 

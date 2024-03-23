@@ -1,8 +1,8 @@
 # 目前需解决问题
 
-#### 回撤流怎么处理？
+#### 回撤流怎么处理(多条数据？？？)？
 
-```mysql
+````mysql
 #回撤流会输出多条吗？
 
 select 
@@ -29,7 +29,105 @@ where rn < 3;
 | +U |                        3413602 |                    17832300656 |            2024-03-17 08:35:33 |                    1 |
 | -U |                        3413602 |                    17832300656 |            2024-03-17 09:58:20 |                    2 |
 | +U |                        3413602 |                    17832300656 |            2024-03-17 09:58:10 |                    2 |
+
+
+
+Flink SQL 是 Apache Flink 的一个模块，它允许用户以 SQL 的形式来编写流处理和批处理作业。Flink SQL 对于那些熟悉 SQL 语言的数据工程师和分析师来说是非常有用的，因为它让他们可以轻松地处理实时数据流。
+
+在你提供的 Flink SQL 查询中：
+
+```sql
+SELECT userid, LAST_VALUE(money) FROM tb GROUP BY userid
 ```
+
+这个查询的目的是从名为 `tb` 的表中，按照 `userid` 分组，并且对于每个 `userid`，它都会输出该用户的最新的 `money` 值。
+
+在 Flink 中，当你运行这样的查询时，你正在处理一个不断更新的结果集。因为 Flink 处理的是无界数据流，所以随着新数据的到来，之前的结果可能会发生变化。为了处理这种情况，Flink 采用了一种称为 "更新流" 的机制。
+
+在 "更新流" 中，Flink 会发送两种类型的消息：
+
+1. **回撤消息（Retraction）**：这是一条指示之前发送的结果不再有效的消息。在你的例子中，如果一个 `userid` 的 `money` 值发生了变化，Flink 首先会发送一个回撤消息来告诉下游的操作符（或者外部系统）之前的值已经过时了。
+
+2. **新增消息（Addition）**：紧接着回撤消息之后，Flink 会发送一个新增消息，包含了新的、有效的结果。在你的例子中，这将是同一个 `userid` 的新的 `money` 值。
+
+这两条消息如何使用取决于你的应用场景。在很多情况下，下游的系统或操作符需要据此更新自己的状态。例如，如果你正在更新一个实时的仪表板，你可能需要首先删除（或标记为无效）之前的值，然后添加新的值来保证仪表板上显示的信息是最新的。
+
+在某些情况下，如果下游系统只关心最终的状态，那么它可能会忽略回撤消息，并只处理新增消息。然而，这可能会导致短暂的不一致状态，因为在处理新增消息之前，旧的值仍然可见。
+
+总结一下，更新流允许 Flink SQL 在处理实时数据流时保持结果的一致性，并且能够向下游传递状态的变化。用户需要根据自己的应用逻辑来决定如何处理这些消息。
+````
+
+#### 回撤流导致的bug？？
+
+```mysql
+#回撤更新流
+每个都更新,有回撤流
+select userid, last(value) from tb group by userid
+
+#这个写法,有个回撤流,会导致group by的哪个sq,当更新时，会删除原来的数据,
+#导致一直只有一条数据,所以新来的数据就算occur_time大,也是rk等于1
+select 
+userid,
+value,
+row_number() over( partition by userid )
+from （
+		select 
+		userid, 
+		last(value) as value
+    from tb 
+    group by userid
+）
+
+
+#会话窗口,不会产生回撤流,所以没问题
+可能是窗口的groupby,只有一条，所以没有回撤流
+select 
+*
+from(
+	select 
+	mobile,
+	value,
+	row_number()over(partition by mobie order by value) as rk
+	from (
+		select
+		mobile,
+		last(value) as value
+		group by SESSION(PROCTIME, INTERVAL '30' MINUTE),mobile
+	)
+)
+where rk = 1
+```
+
+
+
+
+
+#### 开窗按用户聚合拿整条
+
+```mysql
+#5 时间窗口,获取窗口内部row_number排序,然后获取整条数据
+select 
+orderno,
+spuid,
+price,
+create_time
+from(
+    select 
+    orderno,
+    spuid,
+    price,
+    create_time,
+    row_number()over( partition by spuid  order by price desc , create_time desc  ) as rk
+    from mock_order 
+    group by TUMBLE( proctime(), INTERVAL '20' second)
+)
+where rk = 1
+
+现在的问题就是group by来实现开窗,但是orderno不在groupby字段里,
+目前我的需求就是按spuid聚合，然后获取价格最高，时间最近的那条数据
+```
+
+
 
 
 
